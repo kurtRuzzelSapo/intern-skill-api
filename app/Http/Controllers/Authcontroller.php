@@ -55,6 +55,7 @@ class Authcontroller extends Controller
             'email' => 'required|string|max:255|email|unique:users',
             'password' => 'required|string|min:6|confirmed',
             'school' => 'required|string',
+            'gender' => 'required|string',
         ]);
 
         // Return validation errors
@@ -73,6 +74,7 @@ class Authcontroller extends Controller
             $user = User::create([
                 'fullname' => $request->fullname,
                 'email' => $request->email,
+                'gender' => $request->gender,
                 'profile_image' => $request->profile_image ?? $defaultImage,
                 'password' => Hash::make($request->password),
                 'role' => 'intern'
@@ -116,6 +118,7 @@ class Authcontroller extends Controller
         'email' => 'required|string|max:255|email|unique:users',
         'company' => 'required|string|max:255',
         'password' => 'required|string|min:6|confirmed',
+        'gender' => 'required|string',
     ]);
 
     // Return validation errors
@@ -135,6 +138,7 @@ class Authcontroller extends Controller
         $user = User::create([
             'fullname' => $request->fullname,
             'email' => $request->email,
+            'gender' => $request->gender,
             'profile_image' => $request->profile_image ?? $defaultImage,
             'password' => Hash::make($request->password),
             'role' => 'recruiter'
