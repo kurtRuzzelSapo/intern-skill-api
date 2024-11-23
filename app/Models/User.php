@@ -26,6 +26,18 @@ class User extends Authenticatable
     ];
 
 
+    public function applications()
+{
+    return $this->hasMany(Application::class, 'applicant_id');
+}
+
+public function appliedInternships()
+{
+    return $this->belongsToMany(Internship::class, 'applications', 'applicant_id', 'internship_id')
+                ->withPivot('cover_letter', 'resume', 'status', 'created_at', 'updated_at');
+}
+
+
     public function internProfile()
     {
         return $this->hasOne(InternProfile::class, 'user_id');

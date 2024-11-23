@@ -16,11 +16,14 @@ return new class extends Migration
             $table->unsignedBigInteger('recruiter_id'); // Foreign key to recruiter_profiles
             $table->string('title'); // Internship title
             $table->text('desc'); // Description
-            $table->text('requirements'); // Requirements
+            $table->text('skills_required'); // Requirements
             $table->string('cover_post')->nullable(); // Cover image file path
             $table->string('location'); // Location
             $table->decimal('salary', 10, 2); // Salary
             $table->string('duration'); // Duration
+            $table->string('start_status'); // Status of if it is needed
+            $table->date('apply_by'); // The post will be deleted by the date of this
+            $table->text('other_requirements'); // The post will be deleted by the date of this
             $table->timestamps();
 
             // Foreign key constraint

@@ -20,4 +20,16 @@ class Internship extends Model
    {
        return $this->belongsTo(InternProfile::class);
    }
+
+
+   public function applications()
+{
+    return $this->hasMany(Application::class);
+}
+
+public function applicants()
+{
+    return $this->belongsToMany(User::class, 'applications', 'internship_id', 'applicant_id')
+                ->withPivot('cover_letter', 'resume', 'status', 'created_at', 'updated_at');
+}
 }

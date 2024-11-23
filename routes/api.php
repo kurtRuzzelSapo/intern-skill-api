@@ -26,12 +26,14 @@ Route::middleware('auth:sanctum')->group(function () {
 // RECRUITER ROUTE
 Route::middleware('role:recruiter')->group(function () {
     Route::apiResource('recruiter', RecruiterController::class);
+    Route::get('/recruiter/internships', [RecruiterController::class, 'getRecruiterInternships']);
 });
 
 // INTERN ROUTE
     Route::middleware('role:intern')->group(function () {
         Route::apiResource('intern', InternController::class);
-        Route::get('/mydata', [InternController::class, 'getMyData']);
+        Route::get('/intern/mydata', [InternController::class, 'getMyData']);
+        Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
     });
 });
 

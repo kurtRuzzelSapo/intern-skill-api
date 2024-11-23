@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\InternProfile;
+use App\Models\InternSkill;
 use App\Models\RecruiterProfile;
+use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -75,6 +77,7 @@ class Authcontroller extends Controller
                 'fullname' => $request->fullname,
                 'email' => $request->email,
                 'gender' => $request->gender,
+                'phone_number' => $request->phone_number,
                 'profile_image' => $request->profile_image ?? $defaultImage,
                 'password' => Hash::make($request->password),
                 'role' => 'intern'
@@ -85,9 +88,9 @@ class Authcontroller extends Controller
                 'school' => $request->school,
                 'degree' => $request->degree,
                 'cover_image' => $coverImagePath, // Store the file path in the database
-                'gpa' => $request->gpa,
-                'about' => $request->about,
             ]);
+
+
 
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;
