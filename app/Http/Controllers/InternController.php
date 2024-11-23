@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use Illuminate\Http\Request;
 use App\Models\InternProfile;
 use App\Models\User;
@@ -153,7 +154,7 @@ class InternController extends Controller
             'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate image
             'phone_number' => 'nullable|numeric', // Changed from int to numeric for better compatibility
             'address' => 'nullable|string',
-            'resume' => 'nullable|string',
+            'resume' => 'nullable|file|mimes:pdf,doc,docx',
             'gpa' => 'nullable|numeric',
             'about' => 'nullable|string',
             'fullname' => 'nullable|string',
@@ -211,6 +212,47 @@ class InternController extends Controller
         ], 500);
     }
 }
+
+
+public function applyForInternship(Request $request)
+{
+    // Validate incoming data
+    $validated = $request->validate([
+        'internship_id' => 'required|exists:internships,id',
+        'cover_letter' => 'nullable|string',
+        'resume' => 'nullable|file|mimes:pdf,doc,docx|max:2048', // Limit file size to 2MB
+    ]);
+
+    // Check if the user has already applied for this internship
+    $existingApplication = Application::where('internship_id', $validated['internship_id'])
+        ->where('applicant_id', Auth::id())
+        ->first();
+
+    if ($existingApplication) {
+        return response()->json(['error' => 'You have already applied for this internship.'], 409);
+    }
+
+    // Handle resume upload
+    $resumePath = null;
+    if ($request->hasFile('resume')) {
+        $resumePath = $request->file('resume')->store('resumes', 'public'); // Store in "storage/app/public/resumes"
+    }
+
+    // Create the application record
+    $application = Application::create([
+        'internship_id' => $validated['internship_id'],
+        'applicant_id' => Auth::id(), // Assuming the user is authenticated
+        'cover_letter' => $validated['cover_letter'],
+        'resume' => $resumePath,
+        'status' => 'pending', // Default status
+    ]);
+
+    return response()->json([
+        'message' => 'Your application has been submitted successfully.',
+        'application' => $application,
+    ], 201);
+}
+
 
 
     // Delete an intern profile

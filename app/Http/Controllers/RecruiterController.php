@@ -7,6 +7,7 @@ use App\Models\RecruiterProfile;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -21,59 +22,11 @@ class RecruiterController extends Controller
         return response()->json($interns, 200);
     }
 
-    // Create a post for Internship
-    // public function store(Request $request)
-    // {
-    //   // Validations
-    //   $validated = Validator::make($request->all(), [
-    //     'phone_number' => 'required|int',
-    //     'address' => 'required|string',
-    //     'company' => 'required|string',
-    //     'position' => 'required|string',
-    //     'industry' => 'required|string',
-    // ]);
 
-    // // Return validation errors
-    // if ($validated->fails()) {
-    //     return response()->json([
-    //         'errors' => $validated->errors(),
-    //     ], 422);
-    // }
+    public function store(Request $request)
+    {
 
-    // try {
-    //     // Define default profile image URL
-    //     $defaultImage = Storage::url('images/default-profile.png');// Or storage path
-
-    //     // Create the user
-    //     $user = User::create([
-    //         'phone_number' => $request->phone_number,
-    //         'address' => $request->address,
-
-    //     ]);
-
-    //     RecruiterProfile::create([
-    //         'user_id' => $user->id,
-    //         'company' => $request->company,
-    //         'postion' => $request->position,
-    //         'industry' => $request->industry,
-    //     ]);
-
-    //     // Generate token
-    //     $token = $user->createToken('auth_token')->plainTextToken;
-
-    //     return response()->json([
-    //         'message' => "You're successfully registered",
-    //         'access_token' => $token,
-    //         'user' => $user,
-    //     ], 201);
-
-    // } catch (\Exception $exception) {
-    //     Log::error('Registration Error:', ['message' => $exception->getMessage()]); // Log exception
-    //     return response()->json([
-    //         'error' => $exception->getMessage(),
-    //     ], 500);
-    // }
-    // }
+    }
 
     // Show a specific intern profile
     public function show($id)
@@ -161,6 +114,21 @@ class RecruiterController extends Controller
         }
     }
 
+
+    public function getRecruiterInternships()
+{
+    // Get the recruiter ID of the authenticated user
+    $recruiterId = Auth::id();
+
+    // Fetch internships belonging to the recruiter
+    $internships = Internship::where('recruiter_id', $recruiterId)->get();
+
+    // Return the internships as JSON or a view
+    return response()->json([
+        'message' => 'Recruiter internships retrieved successfully.',
+        'internships' => $internships,
+    ], 200);
+}
 
 
     // Delete an intern profile
