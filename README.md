@@ -1,3 +1,49 @@
+# InternConnect & SkillLink API
+
+## Overview
+This repository contains the **API** for **InternConnect** and **SkillLink**, two integrated platforms designed to streamline internship applications and foster professional networking.
+
+- **InternConnect**: Connects interns with recruiters through personalized internship matching.
+- **SkillLink**: An online community for industry discussions, career advice, and professional networking.
+
+The **frontend** of this project, built with Angular, Tailwind CSS, and Angular Material, is hosted in a [separate repository](#) (replace with actual link).
+
+## Key Features
+- **InternConnect:**
+  - Manage intern and recruiter profiles.
+  - Personalized internship recommendations based on intern activity.
+  - Streamlined internship application process.
+  
+- **SkillLink:**
+  - Community forums for industry discussions.
+  - Career advice sharing and networking opportunities.
+  - Recognition through badges and endorsements.
+
+- **Integration:**
+  - Forum activity and endorsements from SkillLink are reflected on InternConnect profiles.
+  - Tailored internship recommendations based on community participation.
+
+## Technologies Used
+### Backend
+- **Node.js** with **Express.js**
+- **Prisma ORM** for database management
+- **Laravel 11** for additional backend logic
+- **SQL** as the database
+
+### Frontend (in separate repository)
+- **Angular 18**
+- **Tailwind CSS**
+- **Angular Material**
+
+## Setup Instructions
+### 1. Clone the Repository
+```bash
+git clone https://github.com/yourusername/internconnect-skilllink-api.git
+cd internconnect-skilllink-api
+
+
+
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
