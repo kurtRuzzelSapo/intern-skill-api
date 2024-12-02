@@ -69,8 +69,8 @@ class Authcontroller extends Controller
 
         try {
             // Define default profile image URL
-            $defaultImage = Storage::url('images/mai_default.jpg');// Or storage path
-            $coverImagePath = Storage::url('images/cover_default.jpg');// Or storage path
+            $defaultImage = Storage::url('images/profile_default.jpg');// Or storage path
+            $coverImagePath = Storage::url('images/cover_default.jpg');// Or storage path might change this later
 
             // Create the user
             $user = User::create([
@@ -126,7 +126,7 @@ class Authcontroller extends Controller
 
     // Return validation errors
     if ($validated->fails()) {
-        Log::info('Validation Errors:', $validated->errors()->toArray()); // Log validation errors
+        Log::info('Validation Errors:', $validated->errors()->toArray()); // This is for Log validation errors
         return response()->json([
             'errors' => $validated->errors(),
         ], 422);
@@ -135,7 +135,7 @@ class Authcontroller extends Controller
     try {
 
           // Define default profile image URL
-          $defaultImage = Storage::url('images/default-profile.png'); // Or storage path
+          $defaultImage = Storage::url('images/profile_default.jpg'); // Or storage path this will be the default YK
 
         // Create the user
         $user = User::create([
