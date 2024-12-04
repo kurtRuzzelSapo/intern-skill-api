@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
+use App\Models\Like;
 class LikeSeeder extends Seeder
 {
     /**
@@ -13,5 +13,9 @@ class LikeSeeder extends Seeder
     public function run(): void
     {
         //
+        Like::factory()->create([
+            'forum_id' => 1,
+            'user_id' => 1,
+        ]);
     }
 }
