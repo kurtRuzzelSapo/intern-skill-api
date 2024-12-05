@@ -25,8 +25,6 @@ The **frontend** of this project, built with Angular, Tailwind CSS, and Angular 
 
 ## Technologies Used
 ### Backend
-- **Node.js** with **Express.js**
-- **Prisma ORM** for database management
 - **Laravel 11** for additional backend logic
 - **SQL** as the database
 
