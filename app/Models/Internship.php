@@ -10,15 +10,18 @@ class Internship extends Model
     = [ 'recruiter_id', // Foreign key to recruiter_profiles
     'title',
     'desc',
-    'requirements',
-    'cover_post', // Image path for cover post
+    'skills_required',
     'location',
     'salary',
-    'duration',];
+    'duration',
+    'start_status',
+    'apply_by',
+    'other_requirements',
+];
 
    public function recruiter()
    {
-       return $this->belongsTo(InternProfile::class);
+       return $this->belongsTo(RecruiterProfile::class);
    }
 
 

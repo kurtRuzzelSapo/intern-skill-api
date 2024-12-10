@@ -14,13 +14,13 @@ return new class extends Migration
         Schema::create('intern_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('cover_image');
-            $table->string('school');
-            $table->string('degree');
-            $table->string('resume');
-            $table->string('cover_letter');
-            $table->string('about');
-            $table->integer('gpa');
+            $table->string('cover_image')->nullable();
+            $table->string('school')->nullable();
+            $table->string('degree')->nullable();
+            $table->string('resume')->nullable();
+            $table->string('cover_letter')->nullable();
+            $table->string('about')->nullable();
+            $table->integer('gpa')->nullable();
             $table->timestamps();
         });
     }

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ForumController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
-
+use App\Http\Controllers\InternshipController;
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -38,18 +38,27 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
 // RECRUITER ROUTE
-Route::middleware('role:recruiter')->group(function () {
+
     Route::apiResource('recruiter', RecruiterController::class);
+    Route::apiResource('internships', InternshipController::class);
     Route::get('/recruiter/internships', [RecruiterController::class, 'getRecruiterInternships']);
-});
+    Route::get('recruiter/{recruiterId}/internships', [RecruiterController::class, 'getRecruiterInternshipsById']);
+    Route::patch('applications/{applicationId}/status', [RecruiterController::class, 'updateApplicationStatus']);
+
 
 // INTERN ROUTE
-    Route::middleware('role:intern')->group(function () {
+
         Route::apiResource('intern', InternController::class);
         Route::get('/intern/mydata', [InternController::class, 'getMyData']);
+        Route::get('/intern/my-applications/{id}', [InternController::class, 'showMyApplications']);
         Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
-    });
+
 });
+
+
+//SKILL LINK ROUTES
+
+
 
 
 

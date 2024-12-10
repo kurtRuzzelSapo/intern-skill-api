@@ -58,6 +58,7 @@ class Authcontroller extends Controller
             'password' => 'required|string|min:6|confirmed',
             'school' => 'required|string',
             'gender' => 'required|string',
+            // 'cover_image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
         ]);
 
         // Return validation errors
@@ -78,6 +79,7 @@ class Authcontroller extends Controller
                 'email' => $request->email,
                 'gender' => $request->gender,
                 'phone_number' => $request->phone_number,
+                'address' => $request->address,
                 'profile_image' => $request->profile_image ?? $defaultImage,
                 'password' => Hash::make($request->password),
                 'role' => 'intern'
@@ -87,7 +89,7 @@ class Authcontroller extends Controller
                 'user_id' => $user->id,
                 'school' => $request->school,
                 'degree' => $request->degree,
-                'cover_image' => $coverImagePath, // Store the file path in the database
+                'cover_image' => $coverImagePath ?? $defaultImage, // Store the file path in the database
             ]);
 
 
@@ -122,6 +124,8 @@ class Authcontroller extends Controller
         'company' => 'required|string|max:255',
         'password' => 'required|string|min:6|confirmed',
         'gender' => 'required|string',
+        'position' => 'required|string',
+        'industry' => 'required|string',
     ]);
 
     // Return validation errors
@@ -142,6 +146,8 @@ class Authcontroller extends Controller
             'fullname' => $request->fullname,
             'email' => $request->email,
             'gender' => $request->gender,
+            'phone_number' => $request->phone_number,
+            'address' => $request->address,
             'profile_image' => $request->profile_image ?? $defaultImage,
             'password' => Hash::make($request->password),
             'role' => 'recruiter'
@@ -150,6 +156,8 @@ class Authcontroller extends Controller
         RecruiterProfile::create([
             'user_id' => $user->id,
             'company' => $request->company,
+            'position' => $request->position,
+            'industry' => $request->industry,
         ]);
 
         // Generate token

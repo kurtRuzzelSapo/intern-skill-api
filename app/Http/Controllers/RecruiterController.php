@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\Internship;
 use App\Models\RecruiterProfile;
 use App\Models\User;
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Notifications\ApplicationStatusUpdated;
+use Illuminate\Support\Facades\Notification;
 
 class RecruiterController extends Controller
 {
@@ -115,20 +119,95 @@ class RecruiterController extends Controller
     }
 
 
-    public function getRecruiterInternships()
+//     public function getRecruiterInternships()
+// {
+//     // Get the recruiter ID of the authenticated user
+//     $recruiterId = Auth::id();
+
+//     // Fetch internships belonging to the recruiter
+//     $internships = Internship::where('recruiter_id', $recruiterId)->get();
+
+//     // Return the internships as JSON or a view
+//     return response()->json([
+//         'message' => 'Recruiter internships retrieved successfully.',
+//         'internships' => $internships,
+//     ], 200);
+// }
+
+public function getRecruiterInternshipsById($recruiterId)
 {
-    // Get the recruiter ID of the authenticated user
-    $recruiterId = Auth::id();
+    try {
+        // Check if the recruiter profile exists
+        $recruiterProfile = RecruiterProfile::find($recruiterId);
 
-    // Fetch internships belonging to the recruiter
-    $internships = Internship::where('recruiter_id', $recruiterId)->get();
+        if (!$recruiterProfile) {
+            return response()->json(['error' => 'Recruiter profile not found'], 404);
+        }
 
-    // Return the internships as JSON or a view
-    return response()->json([
-        'message' => 'Recruiter internships retrieved successfully.',
-        'internships' => $internships,
-    ], 200);
+        // Get all internships created by the recruiter with their applications
+        $internships = Internship::with([
+            'applications' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            },
+            'applications.applicant',
+            'applications.applicant.internProfile'
+        ])
+            ->where('recruiter_id', $recruiterId)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($internship) {
+                return [
+                    'id' => $internship->id,
+                    'title' => $internship->title,
+                    'description' => $internship->description,
+                    'location' => $internship->location,
+                    'salary' => $internship->salary,
+                    'requirements' => $internship->requirements,
+                    'created_at' => $internship->created_at,
+                    'applications_count' => $internship->applications->count(),
+                    'applications' => $internship->applications->map(function ($application) {
+                        return [
+                            'id' => $application->id,
+                            'status' => $application->status,
+                            'created_at' => $application->created_at,
+                            'cover_letter' => $application->cover_letter,
+                            'resume' => $application->resume,
+                            'intern' => [
+                                'id' => $application->applicant->id,
+                                'name' => $application->applicant->fullname,
+                                'email' => $application->applicant->email,
+                                'phone' => $application->applicant->phone_number,
+                                'address' => $application->applicant->address,
+                                'profile_image' => $application->applicant->profile_image,
+                                'education' => [
+                                    'school' => $application->applicant->internProfile->school ?? null,
+                                    'degree' => $application->applicant->internProfile->degree ?? null,
+                                    'gpa' => $application->applicant->internProfile->gpa ?? null,
+                                ],
+                                'about' => $application->applicant->internProfile->about ?? null,
+                                'cover_image' => $application->applicant->internProfile->cover_image ?? null,
+                            ]
+                        ];
+                    })
+                ];
+            });
+
+        return response()->json([
+            'internships' => $internships
+        ], 200);
+
+    } catch (Exception $e) {
+        Log::error('Error fetching recruiter internships: ' . $e->getMessage());
+        return response()->json([
+            'error' => 'An error occurred while retrieving the internships.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
 }
+
+
+
+
 
 
     // Delete an intern profile
@@ -153,4 +232,49 @@ class RecruiterController extends Controller
               ], 500);
           }
       }
+
+public function updateApplicationStatus(Request $request, $applicationId)
+{
+    try {
+        // Validate the request
+        $validatedData = $request->validate([
+            'status' => 'required|string|in:accepted,rejected'
+        ]);
+
+        // Find the application
+        $application = Application::with(['internship.recruiter', 'applicant'])->findOrFail($applicationId);
+
+        // Check if the authenticated recruiter owns the internship
+        $internship = $application->internship;
+        if ($internship->recruiter_id != $request->user()->recruiterProfile->id) {
+            return response()->json([
+                'error' => 'Unauthorized to update this application'
+            ], 403);
+        }
+
+        // Update the application status
+        $application->update([
+            'status' => $validatedData['status']
+        ]);
+
+        // Send notification to the applicant
+        $application->applicant->notify(new ApplicationStatusUpdated($application));
+
+        return response()->json([
+            'message' => 'Application status updated successfully',
+            'application' => $application
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'error' => 'Application not found'
+        ], 404);
+    } catch (Exception $e) {
+        Log::error('Application Status Update Error: ', ['message' => $e->getMessage()]);
+        return response()->json([
+            'error' => 'An error occurred while updating the application status',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
 }
