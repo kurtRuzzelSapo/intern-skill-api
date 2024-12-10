@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use Illuminate\Http\Request;
 use App\Models\InternProfile;
+use App\Models\Internship;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -216,42 +217,139 @@ class InternController extends Controller
 
 public function applyForInternship(Request $request)
 {
-    // Validate incoming data
-    $validated = $request->validate([
-        'internship_id' => 'required|exists:internships,id',
-        'cover_letter' => 'nullable|string',
-        'resume' => 'nullable|file|mimes:pdf,doc,docx|max:2048', // Limit file size to 2MB
-    ]);
+    try {
+        // Get the authenticated user first
+        $user = Auth::user();
 
-    // Check if the user has already applied for this internship
-    $existingApplication = Application::where('internship_id', $validated['internship_id'])
-        ->where('applicant_id', Auth::id())
-        ->first();
+        // Add debug logging
+        Log::info('User attempting to apply:', [
+            'token_user_id' => $user ? $user->id : 'no user',
+            'token' => $request->bearerToken(),
+            'request_data' => $request->all()
+        ]);
 
-    if ($existingApplication) {
-        return response()->json(['error' => 'You have already applied for this internship.'], 409);
+        // Validate incoming data
+        $validated = $request->validate([
+            'internship_id' => 'required|exists:internships,id',
+            'cover_letter' => 'required|string',
+            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+        ]);
+
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Check for existing application using the user object directly
+        $existingApplication = Application::where('internship_id', $validated['internship_id'])
+            ->where('applicant_id', $user->id)  // Use $user->id instead of Auth::id()
+            ->first();
+
+        if ($existingApplication) {
+            return response()->json([
+                'error' => 'You have already applied for this internship.',
+                'user_id' => $user->id,
+                'existing_application' => $existingApplication
+            ], 409);
+        }
+
+        // Handle resume upload
+        $resumePath = null;
+        if ($request->hasFile('resume')) {
+            $resumePath = $request->file('resume')->store('resumes', 'public');
+        }
+
+        // Create the application record using the user object
+        $application = Application::create([
+            'internship_id' => $validated['internship_id'],
+            'applicant_id' => $user->id,  // Use $user->id instead of Auth::id()
+            'cover_letter' => $validated['cover_letter'],
+            'resume' => $resumePath,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'Your application has been submitted successfully.',
+            'application' => $application,
+            'user_id' => $user->id,  // Added for debugging
+            'token' => $request->bearerToken() ? 'Present' : 'Missing'  // Added for debugging
+        ], 201);
+
+    } catch (Exception $e) {
+        Log::error('Application submission error: ' . $e->getMessage(), [
+            'user_id' => Auth::id(),
+            'token' => $request->bearerToken() ? 'Present' : 'Missing'
+        ]);
+        return response()->json([
+            'error' => 'An error occurred while submitting your application.',
+            'details' => $e->getMessage()
+        ], 500);
     }
-
-    // Handle resume upload
-    $resumePath = null;
-    if ($request->hasFile('resume')) {
-        $resumePath = $request->file('resume')->store('resumes', 'public'); // Store in "storage/app/public/resumes"
-    }
-
-    // Create the application record
-    $application = Application::create([
-        'internship_id' => $validated['internship_id'],
-        'applicant_id' => Auth::id(), // Assuming the user is authenticated
-        'cover_letter' => $validated['cover_letter'],
-        'resume' => $resumePath,
-        'status' => 'pending', // Default status
-    ]);
-
-    return response()->json([
-        'message' => 'Your application has been submitted successfully.',
-        'application' => $application,
-    ], 201);
 }
+
+public function showMyApplications()
+{
+    try {
+        // Get the authenticated user
+        $user = Auth::user();
+
+        // Add debug logging
+        Log::info('User attempting to view applications:', [
+            'user_id' => $user ? $user->id : 'no user',
+            'token' => request()->bearerToken()
+        ]);
+
+        // Check if user is authenticated
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Retrieve applications with related internship data
+        $applications = Application::with(['internship', 'applicant'])
+            ->where('applicant_id', $user->id)
+            ->orderBy('created_at', 'desc')  // Optional: sort by newest first
+            ->get();
+
+        // If no applications found, return empty array instead of error
+        if ($applications->isEmpty()) {
+            return response()->json([
+                'applications' => [],
+                'message' => 'No applications found'
+            ], 200);
+        }
+
+        return response()->json([
+            'applications' => $applications,
+        ], 200);
+
+    } catch (Exception $e) {
+        Log::error('Error fetching applications: ' . $e->getMessage());
+        return response()->json([
+            'error' => 'An error occurred while retrieving your applications.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+// public function showApplication($id)
+// {
+//     try {
+//         $application = Application::with(['internship', 'applicant'])
+//             ->find($id);
+
+//         if (!$application) {
+//             return response()->json(['error' => 'Application not found'], 404);
+//         }
+
+//         return response()->json($application, 200);
+//     } catch (Exception $e) {
+//         Log::error('Application Show Error: ', ['message' => $e->getMessage()]);
+//         return response()->json([
+//             'error' => 'An error occurred while retrieving the application.',
+//             'details' => $e->getMessage()
+//         ], 500);
+//     }
+// }
 
 
 
@@ -277,5 +375,7 @@ public function applyForInternship(Request $request)
               ], 500);
           }
       }
+
+
 }
 

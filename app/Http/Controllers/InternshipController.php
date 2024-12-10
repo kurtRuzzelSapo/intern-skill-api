@@ -16,7 +16,7 @@ class InternshipController extends Controller
     // Display a list of recruiter profiles
     public function index()
     {
-        $interns = Internship::with('recruiter')->get();
+        $interns = Internship::with(['recruiter.user'])->get();
         return response()->json($interns, 200);
     }
 
@@ -24,13 +24,15 @@ class InternshipController extends Controller
     public function store(Request $request)
     {
         try {
+            // Log the incoming request data
+            Log::info('Request data:', $request->all());
+
             // Validate the request data
-            $request->validate([
+            $validated = $request->validate([
                 'recruiter_id' => 'required|exists:recruiter_profiles,id',
                 'title' => 'required|string',
                 'desc' => 'required|string',
-                'requirements' => 'required|string',
-                'cover_post' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate image
+                'skills_required' => 'nullable|string',
                 'location' => 'required|string',
                 'salary' => 'required|numeric',
                 'duration' => 'required|string',
@@ -39,33 +41,31 @@ class InternshipController extends Controller
                 'other_requirements' => 'required|string',
             ]);
 
-            // Handle cover image upload
-            $coverImagePath = null;
-            if ($request->hasFile('cover_post')) {
-                $coverImage = $request->file('cover_post');
-                // Store image in the 'public/images' directory and get the file path
-                $coverImagePath = $coverImage->store('images', 'public');
-            }
-
-            // Create the intern profile with the file path of the cover image
+            // Create the internship using validated data
             $intern = Internship::create([
-                'recruiter_id' => $request->recruiter_id,
-                'title' => $request->title,
-                'desc' => $request->desc,
-                'requirements' => $request->requirements,
-                'cover_post' => $coverImagePath, // Store the file path in the database
-                'location' => $request->location,
-                'salary' => $request->salary,
-                'duration' => $request->duration,
-                'start_status' => $request->start_status,
-                'apply_by' => $request->apply_by,
-                'other_requirements' => $request->other_requirements,
+                'recruiter_id' => $validated['recruiter_id'],
+                'title' => $validated['title'],
+                'desc' => $validated['desc'],
+                'skills_required' => $validated['skills_required'] ?? null,
+                'location' => $validated['location'],
+                'salary' => $validated['salary'],
+                'duration' => $validated['duration'],
+                'start_status' => $validated['start_status'],
+                'apply_by' => $validated['apply_by'],
+                'other_requirements' => $validated['other_requirements'],
             ]);
 
             return response()->json($intern, 201);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors specifically
+            Log::error('Validation Error:', ['errors' => $e->errors()]);
+            return response()->json([
+                'error' => 'Validation failed',
+                'details' => $e->errors()
+            ], 422);
         } catch (Exception $e) {
-            Log::error('Internship Creation Error: ', ['message' => $e->getMessage()]);
+            Log::error('Internship Creation Error:', ['message' => $e->getMessage()]);
             return response()->json([
                 'error' => 'An error occurred while creating the Internship.',
                 'details' => $e->getMessage()
@@ -194,7 +194,7 @@ class InternshipController extends Controller
 
 
 
-   
+
 
 
     // Delete an intern profile
