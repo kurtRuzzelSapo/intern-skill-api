@@ -35,4 +35,14 @@ class Forum extends Model
     function allLikes(){
         return $this->hasMany(Like::class,'forum_id');
     }
+
+    public function sharedForums()
+    {
+        return $this->belongsToMany(Forum::class, 'forum_user')->withTimestamps();
+    }
+    // public function sharedByUsers()
+    // {
+    //     return $this->belongsToMany(User::class, 'forum_user')->withTimestamps();
+    // }
+
 }

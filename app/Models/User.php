@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Forum;
 
 class User extends Authenticatable
 {
@@ -50,6 +51,11 @@ public function appliedInternships()
     public function recruiterProfile()
     {
         return $this->hasOne(RecruiterProfile::class);
+    }
+
+    public function sharedForums()
+    {
+        return $this->belongsToMany(Forum::class, 'forum_user')->withTimestamps();
     }
 
     /**
