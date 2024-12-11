@@ -53,10 +53,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/intern/my-applications/{id}', [InternController::class, 'showMyApplications']);
         Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
 
-});
-
-
 //SKILL LINK ROUTES
+
+
+        Route::apiResource('forum', ForumController::class);
+        Route::apiResource('like', LikeController::class);
+        Route::apiResource('comment', CommentController::class);
+        Route::post('/forums/{forum}/share-to-profile', [ForumController::class, 'shareToProfile']);
+        // Route::post('forum/{forum}/like', [LikeController::class, 'store']);
+});
 
 
 

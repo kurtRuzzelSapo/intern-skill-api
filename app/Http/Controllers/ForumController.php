@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ResourcesSinglePostResource;
+use Illuminate\Support\Facades\Storage;
+
 class ForumController extends Controller
 {
     /**
@@ -35,11 +37,10 @@ class ForumController extends Controller
      */
     public function store(Request $request)
     {
-
         $validated = FacadesValidator::make($request->all(),[
             'title' => 'required|string',
             'desc' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:3048',
         ]);
 
         if ($validated->fails()) {
@@ -50,20 +51,49 @@ class ForumController extends Controller
             $post = new Forum();
             $post->title = $request->title;
             $post->desc = $request->desc;
-            $post->image = $request->image;
-            $post->user_id = Auth::id();
 
+            // Handle image upload
+            if ($request->hasFile('image')) {
+                $path = $request->file('image')->store('forum', 'public');
+                $post->image = $path;
+            }
+
+            $post->user_id = Auth::id();
             $post->save();
 
-             //return
-             return response()->json([
+            return response()->json([
                 'message' => 'Post added successfully',
-            ],200);
+                'post' => $post
+            ], 200);
 
         } catch (\Exception $th) {
-            return response()->json(['error' => $th->getMessage()],403);
+            return response()->json(['error' => $th->getMessage()], 403);
         }
     }
+
+// SHARE FEATURE
+//     public function shareToProfile(Request $request, Forum $forum)
+// {
+//     try {
+//         $user = Auth::user();
+
+//         // Check if the forum is already shared by the user
+//         if ($user->sharedForums()->where('forum_id', $forum->id)->exists()) {
+//             return response()->json(['message' => 'Forum already shared to your profile'], 403);
+//         }
+
+//         // Attach the forum to the user's shared forums
+//         $user->sharedForums()->attach($forum->id);
+
+//         return response()->json([
+//             'message' => 'Forum shared to your profile successfully',
+//             'shared_forum' => $forum
+//         ], 200);
+
+//     } catch (\Exception $th) {
+//         return response()->json(['error' => $th->getMessage()], 403);
+//     }
+// }
 
     /**
      * Display the specified resource.
