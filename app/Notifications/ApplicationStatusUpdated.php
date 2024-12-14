@@ -29,13 +29,14 @@ class ApplicationStatusUpdated extends Notification
             $status = $this->application->status;
             $internshipTitle = $this->application->internship->title;
             $companyName = $this->application->internship->recruiter->company;
-
+            $recruiterEmail = $this->application->internship->recruiter->email;
             return (new MailMessage)
                 ->subject("Your Application Status Has Been Updated")
                 ->greeting("Hello " . $notifiable->fullname)
                 ->line("Your application for the position of {$internshipTitle} at {$companyName} has been {$status}.")
                 ->line($this->getStatusMessage($status))
-                ->line("Thank you for using our platform!");
+                ->line("Thank you for using our platform!")
+                ->line("If you have any questions, please contact us at {$recruiterEmail}");
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Email Notification Error: ' . $e->getMessage());
             throw $e;
