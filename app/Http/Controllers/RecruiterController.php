@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\InternProfile;
 use App\Models\Internship;
 use App\Models\RecruiterProfile;
 use App\Models\User;
@@ -31,6 +32,62 @@ class RecruiterController extends Controller
     {
 
     }
+
+
+    public function getMyData()
+{
+    try {
+        // Get the authenticated user
+        $user = Auth::user();
+
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Check the user's role
+        if ($user->role === 'recruiter') {
+            // Fetch the recruiter's profile
+            $recruiterProfile = RecruiterProfile::with('user')->where('user_id', $user->id)->first();
+
+            if (!$recruiterProfile) {
+                return response()->json(['error' => 'No recruiter profile found for this user.'], 404);
+            }
+
+            return response()->json([
+                'user' => $user,
+                'recruiter_profile' => $recruiterProfile,
+            ], 200);
+
+        } elseif ($user->role === 'intern') {
+            // Fetch the intern's profile
+            $internProfile = InternProfile::with('user')->where('user_id', $user->id)->first();
+
+            if (!$internProfile) {
+                return response()->json(['error' => 'No intern profile found for this user.'], 404);
+            }
+
+            return response()->json([
+                'user' => $user,
+                'intern_profile' => $internProfile,
+            ], 200);
+        }
+
+        // If the role is neither recruiter nor intern
+        return response()->json(['error' => 'Invalid user role.'], 400);
+
+    } catch (Exception $e) {
+        Log::error('Error fetching user data: ', [
+            'message' => $e->getMessage(),
+            'user_id' => Auth::id() // Log the user ID if available
+        ]);
+
+        return response()->json([
+            'error' => 'An error occurred while retrieving the data.',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 
     // Show a specific intern profile
     public function show($id)

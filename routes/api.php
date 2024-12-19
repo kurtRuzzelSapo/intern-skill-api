@@ -11,6 +11,8 @@ use App\Http\Controllers\ForumController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\LikeController;
 use App\Http\Controllers\InternshipController;
+use Illuminate\Container\Attributes\Auth;
+
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -19,7 +21,7 @@ Route::get('/user', function (Request $request) {
 Route::post('/login', [Authcontroller::class, 'login']);
 Route::post('/register/intern', [Authcontroller::class, 'registerIntern']);
 Route::post('/register/recruiter', [Authcontroller::class, 'registerRecruiter']);
-
+Route::get('/mydata/{id}', [AuthController::class, 'getMyData']);
 // FORUM ROUTE THIS IS FOR ALL USERS (SKILL LINK)
 Route::apiResource('forum', ForumController::class);
 Route::delete('forum/{forum}/forcedestroy', [ForumController::class, 'forceDestroy'])->middleware('auth:sanctum');
@@ -41,6 +43,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::apiResource('recruiter', RecruiterController::class);
     Route::apiResource('internships', InternshipController::class);
+    // Route::get('/intern/mydata', [RecruiterController::class, 'getMyData']);
     Route::get('/recruiter/internships', [RecruiterController::class, 'getRecruiterInternships']);
     Route::get('recruiter/{recruiterId}/internships', [RecruiterController::class, 'getRecruiterInternshipsById']);
     Route::patch('applications/{applicationId}/status', [RecruiterController::class, 'updateApplicationStatus']);
@@ -49,7 +52,8 @@ Route::middleware('auth:sanctum')->group(function () {
 // INTERN ROUTE
 
         Route::apiResource('intern', InternController::class);
-        Route::get('/intern/mydata', [InternController::class, 'getMyData']);
+        //GETTING MY OWN DATA
+        // Route::get('/intern/mydata', [InternController::class, 'getMyData']);
         Route::get('/intern/my-applications/{id}', [InternController::class, 'showMyApplications']);
         Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
 
@@ -57,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         Route::apiResource('forum', ForumController::class);
+        Route::get('/getmyforum', [ForumController::class, 'getMyForum']);
         Route::apiResource('like', LikeController::class);
         Route::apiResource('comment', CommentController::class);
         Route::post('/forums/{forum}/share-to-profile', [ForumController::class, 'shareToProfile']);

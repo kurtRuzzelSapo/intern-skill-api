@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ResourcesSinglePostResource;
+use App\Models\User;
+use Exception;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ForumController extends Controller
@@ -32,19 +35,49 @@ class ForumController extends Controller
         }
     }
 
+
+    public function getMyForum()
+    {
+        try {
+            // Get the authenticated user
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json(['error' => 'User not authenticated'], 401);
+            }
+
+            // Retrieve the forums created by the authenticated user
+            $forums = Forum::where('user_id', $user->id)->with('comments', 'likes')->get();
+
+            return response()->json([
+                'user' => $user,
+                'forums' => $forums,
+            ], 200);
+
+        } catch (Exception $e) {
+            Log::error('Error fetching user forums: ', [
+                'message' => $e->getMessage(),
+                'user_id' => $user->id, // Log the user ID passed
+            ]);
+
+            return response()->json([
+                'error' => 'An error occurred while retrieving the forums.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
     /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        $validated = FacadesValidator::make($request->all(),[
+        $validated = FacadesValidator::make($request->all(), [
             'title' => 'required|string',
             'desc' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:3048',
         ]);
 
         if ($validated->fails()) {
-            return response()->json($validated->errors(),403);
+            return response()->json($validated->errors(), 403);
         }
 
         try {
@@ -56,6 +89,8 @@ class ForumController extends Controller
             if ($request->hasFile('image')) {
                 $path = $request->file('image')->store('forum', 'public');
                 $post->image = $path;
+            } else {
+                $post->image = null; // Explicitly set to null if no image is uploaded
             }
 
             $post->user_id = Auth::id();
@@ -70,6 +105,7 @@ class ForumController extends Controller
             return response()->json(['error' => $th->getMessage()], 403);
         }
     }
+
 
 // SHARE FEATURE
 //     public function shareToProfile(Request $request, Forum $forum)

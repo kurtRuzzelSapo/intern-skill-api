@@ -7,7 +7,9 @@ use App\Models\InternSkill;
 use App\Models\RecruiterProfile;
 use App\Models\Skill;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -45,6 +47,56 @@ class Authcontroller extends Controller
         }
     }
 
+    public function getMyData($id)
+    {
+        try {
+            // Find the user by ID
+            $user = User::find($id);
+
+            if (!$user) {
+                return response()->json(['error' => 'User not found'], 404);
+            }
+
+            // Check the user's role and retrieve the appropriate profile
+            if ($user->role === 'recruiter') {
+                $recruiterProfile = RecruiterProfile::with('user')->where('user_id', $user->id)->first();
+
+                if (!$recruiterProfile) {
+                    return response()->json(['error' => 'No recruiter profile found for this user.'], 404);
+                }
+
+                return response()->json([
+                    'user' => $user,
+                    'recruiter_profile' => $recruiterProfile,
+                ], 200);
+            } elseif ($user->role === 'intern') {
+                $internProfile = InternProfile::with('user')->where('user_id', $user->id)->first();
+
+                if (!$internProfile) {
+                    return response()->json(['error' => 'No intern profile found for this user.'], 404);
+                }
+
+                return response()->json([
+                    'user' => $user,
+                    'intern_profile' => $internProfile,
+                ], 200);
+            }
+
+            // Invalid role
+            return response()->json(['error' => 'Invalid user role.'], 400);
+
+        } catch (Exception $e) {
+            Log::error('Error fetching user data: ', [
+                'message' => $e->getMessage(),
+                'user_id' => $id, // Log the user ID passed
+            ]);
+
+            return response()->json([
+                'error' => 'An error occurred while retrieving the data.',
+                'details' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
 
 

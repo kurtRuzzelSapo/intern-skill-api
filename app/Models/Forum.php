@@ -15,8 +15,7 @@ class Forum extends Model
 
     protected $fillable = [
         'title',
-        'desc',
-        'image'
+        'desc'
     ];
 
     protected $dates = ['deleted_at'];
