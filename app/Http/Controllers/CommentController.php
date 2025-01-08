@@ -19,8 +19,9 @@ class CommentController extends Controller
     {
         //
         try {
+            
 
-            $comments = Comment::all();
+            $comments = Comment::with('user')->get();
             return response()->json($comments,200);
         } catch (\Exception $th) {
             return response()->json(['error' => $th->getMessage()],403);
@@ -35,6 +36,7 @@ class CommentController extends Controller
         $validated = Validator::make($request->all(),[
             'forum_id' => 'required|integer',
             'comment' => 'required|string',
+            'user_id' => 'required|string',
         ]);
 
         if ($validated->fails()) {
@@ -45,7 +47,7 @@ class CommentController extends Controller
             $comment = new Comment();
             $comment->forum_id = $request->forum_id;
             $comment->comment = $request->comment;
-            $comment->user_id = Auth::id();
+            $comment->user_id = $request->user_id;
             $comment->save();
 
              //return
@@ -61,9 +63,14 @@ class CommentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Comment $comment)
+    public function showComments($forumId)
     {
-        //
+        try {
+            $comments = Comment::where('forum_id',$forumId)->with('user')->get();
+            return response()->json($comments,200);
+        } catch (\Exception $th) {
+            return response()->json(['error' => $th->getMessage()],403);
+        }
     }
 
     /**

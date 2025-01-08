@@ -141,7 +141,8 @@ class Authcontroller extends Controller
                 'user_id' => $user->id,
                 'school' => $request->school,
                 'degree' => $request->degree,
-                'cover_image' => $coverImagePath ?? $defaultImage, // Store the file path in the database
+                'cover_image' => $coverImagePath, // Store the file path in the database
+                'about' => 'Hello, I am '. $request->fullname .'a student at ' . $request->school,
             ]);
 
 

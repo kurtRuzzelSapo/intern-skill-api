@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class InternProfile extends Model
 {
     protected $fillable
-    = ['user_id', 'school', 'degree'];
+    = ['user_id', 'school', 'degree', 'about', 'cover_image'];
 
     public function user()
     {

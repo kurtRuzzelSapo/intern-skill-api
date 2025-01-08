@@ -19,19 +19,65 @@ Route::get('/user', function (Request $request) {
 
 // AUTH ROUTE
 Route::post('/login', [Authcontroller::class, 'login']);
+
 Route::post('/register/intern', [Authcontroller::class, 'registerIntern']);
+
 Route::post('/register/recruiter', [Authcontroller::class, 'registerRecruiter']);
+
 Route::get('/mydata/{id}', [AuthController::class, 'getMyData']);
+
+
+
+
 // FORUM ROUTE THIS IS FOR ALL USERS (SKILL LINK)
+Route::post('/like/forum', [LikeController::class, 'likePost']);
+
 Route::apiResource('forum', ForumController::class);
+
+Route::apiResource('comment', CommentController::class);
+
+Route::get('/comments/{forumId}', [CommentController::class, 'showComments']);
+
+Route::get('/user/{id}/forums', [ForumController::class, 'getMyForum']);
+
 Route::delete('forum/{forum}/forcedestroy', [ForumController::class, 'forceDestroy'])->middleware('auth:sanctum');
+
 Route::post('forum/{forum}/restore', [ForumController::class, 'restore'])->middleware('auth:sanctum');
 
 // COMMENT ROUTE
-Route::apiResource('comment', CommentController::class)->middleware('auth:sanctum');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // LIKE ROUTE
-Route::apiResource('like', LikeController::class)->middleware('auth:sanctum');
+// Route::apiResource('like', LikeController::class)->middleware('auth:sanctum');
 
 // ADMIN ROUTE
 Route::middleware('auth:sanctum')->group(function () {
@@ -61,9 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
         Route::apiResource('forum', ForumController::class);
-        Route::get('/getmyforum', [ForumController::class, 'getMyForum']);
-        Route::apiResource('like', LikeController::class);
-        Route::apiResource('comment', CommentController::class);
+
         Route::post('/forums/{forum}/share-to-profile', [ForumController::class, 'shareToProfile']);
         // Route::post('forum/{forum}/like', [LikeController::class, 'store']);
 });

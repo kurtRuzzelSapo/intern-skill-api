@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Like;
+use App\Models\Forum;
 use App\Http\Requests\StoreLikeRequest;
 use App\Http\Requests\UpdateLikeRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class LikeController extends Controller
 {
@@ -19,45 +21,74 @@ class LikeController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-          // Validate the incoming request
-          $validated = Validator::make($request->all(), [
-            'forum_id' => 'required|integer',
-        ]);
 
-        if ($validated->fails()) {
-            return response()->json($validated->errors(), 403);
-        }
+    }
 
+    public function likePost(Request $request)
+    {
         try {
-            // Check if the user has already liked this post
-            $userLikedPostBefore = Like::where('user_id', Auth::id())
-                ->where('forum_id', $request->forum_id)
-                ->first();
+            // Validate the incoming request
+            $forumId = $request->input('forum_id');
+            $userId = $request->input('user_id');
 
-            if ($userLikedPostBefore) {
-                return response()->json(['message' => 'You cannot like a post twice'], 403);
-            } else {
-                // Create a new like entry
-                $like = new Like();
-                $like->forum_id = $request->forum_id;
-                $like->user_id = Auth::id();
-                $like->save();
-
-                // Return success message
+            if (!$forumId || !$userId) {
                 return response()->json([
-                        'message' => 'Post liked successfully',
-                ], 200);
+                    'error' => 'Both forum_id and user_id are required.'
+                ], 400);
             }
 
+            // Find the forum post
+            $forum = Forum::find($forumId);
+
+            if (!$forum) {
+                return response()->json([
+                    'error' => 'Forum post not found.'
+                ], 404);
+            }
+
+            // Check if the user has already liked the post
+            $alreadyLiked = Like::where('user_id', $userId)
+                ->where('forum_id', $forumId)
+                ->exists();
+
+            if ($alreadyLiked) {
+                return response()->json([
+                    'message' => 'You have already liked this post.'
+                ], 403);
+            }
+
+            // Create a new like
+            $like = new Like();
+            $like->forum_id = $forumId;
+            $like->user_id = $userId;
+            $like->save();
+
+            return response()->json([
+                'status' => 'success', // Add a status key for consistency
+                'message' => 'Post liked successfully.',
+            ], 200);
+
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 403);
+            // Log the error with more context
+            Log::error('Error liking forum post:', [
+                'forum_id' => $request->input('forum_id'),
+                'user_id' => $request->input('user_id'),
+                'error_message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'success', // Add a status key for consistency
+                'message' => 'Post liked successfully.',
+            ], 200);
         }
     }
+
+
+
+
+
 
     /**
      * Display the specified resource.

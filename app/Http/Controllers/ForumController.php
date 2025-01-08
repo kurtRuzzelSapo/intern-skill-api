@@ -19,35 +19,83 @@ class ForumController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        try {
-            $posts = Forum::with('user', 'comments', 'likes')
-                ->withCount('comments', 'likes')
-                ->latest()
-                ->get();
 
-            return response()->json([
-                'posts' => $posts
-            ], 200);
-        } catch (\Exception $exception) {
-            return response()->json(['error' => $exception->getMessage()], 403);
-        }
+     public function index()
+{
+    try {
+        // Get all posts
+        $posts = Forum::with('user', 'comments', 'likes')
+            ->withCount('comments', 'likes')
+            ->latest()
+            ->get();
+
+        // Get top 3 posts using a separate query
+        $topPosts = Forum::with('user', 'comments', 'likes')
+            ->withCount('comments', 'likes')
+            ->orderByRaw('(likes_count + comments_count) DESC')
+            ->limit(3)
+            ->get();
+
+        // Add the full URL to the image field
+        $posts->each(function ($post) {
+            $post->image = $post->image ? url('storage/' . $post->image) : null;
+        });
+
+        $topPosts->each(function ($post) {
+            $post->image = $post->image ? url('storage/' . $post->image) : null;
+        });
+
+        return response()->json([
+            'posts' => $posts,
+            'top_posts' => $topPosts
+        ], 200);
+    } catch (\Exception $exception) {
+        return response()->json(['error' => $exception->getMessage()], 403);
     }
+}
+//     public function index()
+// {
+//     try {
+//         $posts = Forum::with('user', 'comments', 'likes')
+//             ->withCount('comments', 'likes')
+//             ->latest()
+//             ->get();
+
+//         // Add the full URL to the image field for each post
+//         $posts->each(function ($post) {
+//             $post->image = $post->image ? url('storage/' . $post->image) : null;
+//         });
+
+//         return response()->json([
+//             'posts' => $posts
+//         ], 200);
+//     } catch (\Exception $exception) {
+//         return response()->json(['error' => $exception->getMessage()], 403);
+//     }
+// }
 
 
-    public function getMyForum()
+
+    public function getMyForum($userId)
     {
         try {
             // Get the authenticated user
-            $user = Auth::user();
+            $user = User::find($userId);
 
             if (!$user) {
                 return response()->json(['error' => 'User not authenticated'], 401);
             }
 
             // Retrieve the forums created by the authenticated user
-            $forums = Forum::where('user_id', $user->id)->with('comments', 'likes')->get();
+            $forums = Forum::where('user_id', $user->id)
+            ->with('comments', 'likes')
+            ->withCount('comments', 'likes')
+            ->latest()
+            ->get();
+
+            $forums->each(function ($forums) {
+                $forums->image = $forums->image ? url('storage/' . $forums->image) : null;
+            });
 
             return response()->json([
                 'user' => $user,
@@ -87,7 +135,9 @@ class ForumController extends Controller
 
             // Handle image upload
             if ($request->hasFile('image')) {
+                // Store the file in the 'forum' directory within the 'public' disk
                 $path = $request->file('image')->store('forum', 'public');
+                // Save the relative path
                 $post->image = $path;
             } else {
                 $post->image = null; // Explicitly set to null if no image is uploaded
@@ -95,6 +145,9 @@ class ForumController extends Controller
 
             $post->user_id = Auth::id();
             $post->save();
+
+            // Prepare response with full image URL
+            $post->image = $post->image ? url('storage/' . $post->image) : null;
 
             return response()->json([
                 'message' => 'Post added successfully',
@@ -105,6 +158,7 @@ class ForumController extends Controller
             return response()->json(['error' => $th->getMessage()], 403);
         }
     }
+
 
 
 // SHARE FEATURE
