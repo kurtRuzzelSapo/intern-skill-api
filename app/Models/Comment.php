@@ -14,9 +14,29 @@ class Comment extends Model
         'user_id',
         'comment',
         'forum_id',
+        'parent_id'
     ];
 
-    function user(){
+        // Relationship to parent comment
+        public function parent()
+        {
+            return $this->belongsTo(Comment::class, 'parent_id');
+        }
+
+        // Relationship to child comments (replies)
+        public function replies()
+        {
+            return $this->hasMany(Comment::class, 'parent_id')->with('replies'); // Recursive relationship
+        }
+
+
+        function user()
+        {
         return $this->belongsTo(User::class,'user_id');
-    }
+        }
+
+        public function forum()
+        {
+            return $this->belongsTo(Forum::class);
+        }
 }

@@ -110,7 +110,6 @@ class Authcontroller extends Controller
             'password' => 'required|string|min:6|confirmed',
             'school' => 'required|string',
             'gender' => 'required|string',
-            // 'cover_image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048|nullable',
         ]);
 
         // Return validation errors
@@ -121,9 +120,24 @@ class Authcontroller extends Controller
         }
 
         try {
-            // Define default profile image URL
-            $defaultImage = Storage::url('images/profile_default.jpg');// Or storage path
-            $coverImagePath = Storage::url('images/cover_default.jpg');// Or storage path might change this later
+            // Define arrays of random default images
+            $profileImages = [
+                Storage::url('images/profile_default_1.jpg'),
+                Storage::url('images/profile_default_2.jpg'),
+                Storage::url('images/profile_default_3.jpg'),
+                Storage::url('images/profile_default_4.jpg'),
+            ];
+
+            $coverImages = [
+                Storage::url('images/cover_default_1.jpg'),
+                Storage::url('images/cover_default_2.jpg'),
+                Storage::url('images/cover_default_3.jpg'),
+                Storage::url('images/cover_default_4.jpg'),
+            ];
+
+            // Pick a random image from each array
+            $randomProfileImage = $profileImages[mt_rand(0, count($profileImages) - 1)];
+            $randomCoverImage = $coverImages[mt_rand(0, count($coverImages) - 1)];
 
             // Create the user
             $user = User::create([
@@ -132,20 +146,19 @@ class Authcontroller extends Controller
                 'gender' => $request->gender,
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
-                'profile_image' => $request->profile_image ?? $defaultImage,
+                'profile_image' => $request->profile_image ?? $randomProfileImage,
                 'password' => Hash::make($request->password),
                 'role' => 'intern'
             ]);
 
+            // Create the intern profile
             InternProfile::create([
                 'user_id' => $user->id,
                 'school' => $request->school,
                 'degree' => $request->degree,
-                'cover_image' => $coverImagePath, // Store the file path in the database
-                'about' => 'Hello, I am '. $request->fullname .'a student at ' . $request->school,
+                'cover_image' => $randomCoverImage, // Store the random cover image path in the database
+                'about' => 'Hello, I am ' . $request->fullname . ' a student at ' . $request->school,
             ]);
-
-
 
             // Generate token
             $token = $user->createToken('auth_token')->plainTextToken;
@@ -165,9 +178,9 @@ class Authcontroller extends Controller
     }
 
 
-// RECRUITER REGISTER
+    // RECRUITER REGISTER
     public function registerRecruiter(Request $request)
-{
+    {
     // Log::info('Incoming Request:', $request->all());
 
     // Validations
@@ -183,16 +196,32 @@ class Authcontroller extends Controller
 
     // Return validation errors
     if ($validated->fails()) {
-        Log::info('Validation Errors:', $validated->errors()->toArray()); // This is for Log validation errors
         return response()->json([
             'errors' => $validated->errors(),
         ], 422);
     }
 
-    try {
 
-          // Define default profile image URL
-          $defaultImage = Storage::url('images/profile_default.jpg'); // Or storage path this will be the default YK
+
+        try {
+            // Define arrays of random default images
+            $profileImages = [
+                Storage::url('images/profile_default_1.jpg'),
+                Storage::url('images/profile_default_2.jpg'),
+                Storage::url('images/profile_default_3.jpg'),
+                Storage::url('images/profile_default_4.jpg'),
+            ];
+
+            $coverImages = [
+                Storage::url('images/cover_default_1.jpg'),
+                Storage::url('images/cover_default_2.jpg'),
+                Storage::url('images/cover_default_3.jpg'),
+                Storage::url('images/cover_default_4.jpg'),
+            ];
+
+              // Pick a random image from each array
+              $randomProfileImage = $profileImages[mt_rand(0, count($profileImages) - 1)];
+              $randomCoverImage = $coverImages[mt_rand(0, count($coverImages) - 1)];
 
         // Create the user
         $user = User::create([
@@ -201,7 +230,7 @@ class Authcontroller extends Controller
             'gender' => $request->gender,
             'phone_number' => $request->phone_number,
             'address' => $request->address,
-            'profile_image' => $request->profile_image ?? $defaultImage,
+            'profile_image' => $request->profile_image ?? $randomProfileImage,
             'password' => Hash::make($request->password),
             'role' => 'recruiter'
         ]);
@@ -211,6 +240,8 @@ class Authcontroller extends Controller
             'company' => $request->company,
             'position' => $request->position,
             'industry' => $request->industry,
+            'cover_image' => $randomCoverImage, // Store the random cover image path in the database
+            'about' => 'Hello, I am ' . $request->fullname . ' working at ' . $request->school. $request->industry .'Industry',
         ]);
 
         // Generate token
@@ -228,5 +259,10 @@ class Authcontroller extends Controller
             'error' => $exception->getMessage(),
         ], 500);
     }
+
+
+
+
 }
+
 }

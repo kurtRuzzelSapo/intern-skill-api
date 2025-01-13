@@ -19,7 +19,7 @@ class CommentController extends Controller
     {
         //
         try {
-            
+
 
             $comments = Comment::with('user')->get();
             return response()->json($comments,200);
@@ -60,18 +60,78 @@ class CommentController extends Controller
         }
     }
 
+    public function reply(Request $request)
+    {
+        $request->validate([
+            'forum_id' => 'required|exists:forums,id',
+            'comment' => 'required|string|max:1000',
+            'parent_id' => 'nullable|exists:comments,id', // Ensure parent_id references a valid comment
+        ]);
+
+        $comment = Comment::create([
+            'user_id' => $request->user_id,
+            'forum_id' => $request->forum_id,
+            'parent_id' => $request->parent_id, // NULL for top-level comments
+            'comment' => $request->comment,
+        ]);
+
+        return response()->json(['message' => 'Comment added successfully!', 'comment' => $comment], 201);
+    }
+
     /**
      * Display the specified resource.
      */
+    // public function showComments($forumId)
+    // {
+    //     try {
+    //         $comments = Comment::where('forum_id', $forumId)
+    //             ->whereNull('parent_id')
+    //             ->with(['replies.user', 'user'])
+    //             ->get();
+
+    //         // Debugging: Log the query result
+    //         logger($comments);
+
+    //         return response()->json([
+    //             'status' => 'success',
+    //             'message' => 'Comments fetched successfully.',
+    //             'data' => $comments,
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status' => 'error',
+    //             'message' => 'An error occurred while fetching comments.',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
+
     public function showComments($forumId)
-    {
-        try {
-            $comments = Comment::where('forum_id',$forumId)->with('user')->get();
-            return response()->json($comments,200);
-        } catch (\Exception $th) {
-            return response()->json(['error' => $th->getMessage()],403);
-        }
+{
+    try {
+        $comments = Comment::where('forum_id', $forumId)
+            ->whereNull('parent_id')
+            ->with(['replies' => function ($query) {
+                $query->with('user');
+            }, 'user'])
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Comments fetched successfully.',
+            'data' => $comments,
+        ], 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'An error occurred while fetching comments.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
     /**
      * Update the specified resource in storage.

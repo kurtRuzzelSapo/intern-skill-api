@@ -36,6 +36,8 @@ Route::apiResource('forum', ForumController::class);
 
 Route::apiResource('comment', CommentController::class);
 
+Route::post('/reply', [CommentController::class, 'reply']);
+
 Route::get('/comments/{forumId}', [CommentController::class, 'showComments']);
 
 Route::get('/user/{id}/forums', [ForumController::class, 'getMyForum']);

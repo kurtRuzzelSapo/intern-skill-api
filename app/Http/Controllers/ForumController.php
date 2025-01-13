@@ -19,40 +19,125 @@ class ForumController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // public function index()
+    // {
+    //     try {
+    //         $perPage = request('per_page', 5);
+
+    //         // Get posts by interns with pagination
+    //         $internPosts = Forum::whereHas('user', function ($query) {
+    //             $query->where('role', 'intern');
+    //         })->with('user', 'comments', 'likes', 'images')
+    //             ->latest()
+    //             ->paginate($perPage);
+
+    //         // Get posts by recruiters with pagination
+    //         $recruiterPosts = Forum::whereHas('user', function ($query) {
+    //             $query->where('role', 'recruiter');
+    //         })->with('user', 'comments', 'likes', 'images')
+    //             ->latest()
+    //             ->paginate($perPage);
+
+    //         // Transform image URLs
+    //         foreach ([$internPosts, $recruiterPosts] as $collection) {
+    //             $collection->transform(function ($post) {
+    //                 $post->images->transform(function ($image) {
+    //                     $image->image_path = Storage::url($image->image_path);
+    //                     return $image;
+    //                 });
+    //                 return $post;
+    //             });
+    //         }
+
+    //         return response()->json([
+    //             'intern_posts' => $internPosts,
+    //             'recruiter_posts' => $recruiterPosts
+    //         ]);
+
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => $e->getMessage()], 403);
+    //     }
+    // }
 
      public function index()
-{
-    try {
-        // Get all posts
-        $posts = Forum::with('user', 'comments', 'likes')
-            ->withCount('comments', 'likes')
-            ->latest()
-            ->get();
+     {
+         try {
+             // Get all posts
+             $posts = Forum::with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($post) {
+                     // Map over the images to include the full URL
+                     $post->images = $post->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path); // Add the full URL to the image path
+                         return $image;
+                     });
+                     return $post;
+                 });
 
-        // Get top 3 posts using a separate query
-        $topPosts = Forum::with('user', 'comments', 'likes')
-            ->withCount('comments', 'likes')
-            ->orderByRaw('(likes_count + comments_count) DESC')
-            ->limit(3)
-            ->get();
+             // Get top 3 posts
+             $topPosts = Forum::with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->orderByRaw('(likes_count + comments_count) DESC')
+                 ->limit(3)
+                 ->get()
+                 ->map(function ($post) {
+                     // Map over the images to include the full URL
+                     $post->images = $post->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $post;
+                 });
 
-        // Add the full URL to the image field
-        $posts->each(function ($post) {
-            $post->image = $post->image ? url('storage/' . $post->image) : null;
-        });
+             // Get posts by interns
+             $internPosts = Forum::whereHas('user', function ($query) {
+                 $query->where('role', 'intern');
+             })->with('user', 'comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($post) {
+                     // Map over the images to include the full URL
+                     $post->images = $post->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $post;
+                 });
 
-        $topPosts->each(function ($post) {
-            $post->image = $post->image ? url('storage/' . $post->image) : null;
-        });
+             // Get posts by recruiters
+             $recruiterPosts = Forum::whereHas('user', function ($query) {
+                 $query->where('role', 'recruiter');
+             })->with('user', 'comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($post) {
+                     // Map over the images to include the full URL
+                     $post->images = $post->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $post;
+                 });
 
-        return response()->json([
-            'posts' => $posts,
-            'top_posts' => $topPosts
-        ], 200);
-    } catch (\Exception $exception) {
-        return response()->json(['error' => $exception->getMessage()], 403);
-    }
-}
+             // Return all posts with categories
+             return response()->json([
+                 'posts' => $posts,
+                 'top_posts' => $topPosts,
+                 'intern_posts' => $internPosts,
+                 'recruiter_posts' => $recruiterPosts
+             ], 200);
+
+         } catch (\Exception $exception) {
+             return response()->json(['error' => $exception->getMessage()], 403);
+         }
+     }
+
+
+
+
+
 //     public function index()
 // {
 //     try {
@@ -122,6 +207,7 @@ class ForumController extends Controller
         $validated = FacadesValidator::make($request->all(), [
             'title' => 'required|string',
             'desc' => 'required|string',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate multiple images
         ]);
 
         if ($validated->fails()) {
@@ -133,21 +219,23 @@ class ForumController extends Controller
             $post->title = $request->title;
             $post->desc = $request->desc;
 
-            // Handle image upload
-            if ($request->hasFile('image')) {
-                // Store the file in the 'forum' directory within the 'public' disk
-                $path = $request->file('image')->store('forum', 'public');
-                // Save the relative path
-                $post->image = $path;
-            } else {
-                $post->image = null; // Explicitly set to null if no image is uploaded
-            }
-
+            // Save the forum post first to get its ID
             $post->user_id = Auth::id();
             $post->save();
 
-            // Prepare response with full image URL
-            $post->image = $post->image ? url('storage/' . $post->image) : null;
+            // Handle image upload
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $path = $image->store('forum_images', 'public'); // Store image
+                    // Save image path in forum_images table
+                    $post->images()->create(['image_path' => $path, 'forum_id' => $post->id]);
+                }
+            }
+
+            // Prepare response with full image URLs
+            $post->images = $post->images()->get()->map(function ($image) {
+                return url('storage/' . $image->image_path);
+            });
 
             return response()->json([
                 'message' => 'Post added successfully',

@@ -15,7 +15,8 @@ class Forum extends Model
 
     protected $fillable = [
         'title',
-        'desc'
+        'desc',
+        'user_id'
     ];
 
     protected $dates = ['deleted_at'];
@@ -33,6 +34,11 @@ class Forum extends Model
     }
     function allLikes(){
         return $this->hasMany(Like::class,'forum_id');
+    }
+
+    public function images()
+    {
+        return $this->hasMany(ForumImage::class, 'forum_id');
     }
 
     public function sharedForums()

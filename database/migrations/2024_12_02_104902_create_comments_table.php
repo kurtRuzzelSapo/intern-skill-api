@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Refferences for the user id
             $table->foreignId('forum_id')->constrained('forums')->onDelete('cascade'); // Refferences for the forum id
+            $table->foreignId('parent_id')->nullable()->constrained('comments')->onDelete('cascade'); // Self-referencing foreign key for replies
             $table->text('comment');
             $table->timestamps();
         });
