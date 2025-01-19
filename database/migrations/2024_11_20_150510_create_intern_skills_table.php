@@ -9,17 +9,20 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('intern_skills', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('intern_id')->constrained('intern_profiles')->onDelete('cascade');
-            $table->foreignId('skill_id')->constrained('skills')->onDelete('cascade');
+            $table->unsignedBigInteger('intern_id');
+            $table->unsignedBigInteger('internship_id');
             $table->timestamps();
 
-            $table->unique(['intern_id', 'skill_id']); // Prevent duplicate entries
+            // Foreign key constraints
+            $table->foreign('intern_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('internship_id')->references('id')->on('internships')->onDelete('cascade');
         });
     }
+
 
     /**
      * Reverse the migrations.
