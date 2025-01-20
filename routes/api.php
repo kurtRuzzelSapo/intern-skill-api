@@ -46,11 +46,15 @@ Route::delete('forum/{forum}/forcedestroy', [ForumController::class, 'forceDestr
 
 Route::post('forum/{forum}/restore', [ForumController::class, 'restore'])->middleware('auth:sanctum');
 
-// COMMENT ROUTE
 
 
+// =======INTERN CONNECT=============
 
+// RECRUITER
 
+Route::post('internship', [InternshipController::class, 'store']);
+
+Route::get('internship', [InternshipController::class, 'index']);
 
 
 

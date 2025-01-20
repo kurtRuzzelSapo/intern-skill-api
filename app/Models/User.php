@@ -53,9 +53,19 @@ public function appliedInternships()
         return $this->hasOne(RecruiterProfile::class);
     }
 
+    public function recruiters()
+    {
+        return $this->hasMany(RecruiterProfile::class);
+    }
+
     public function sharedForums()
     {
         return $this->belongsToMany(Forum::class, 'forum_user')->withTimestamps();
+    }
+
+    public function skills()
+    {
+    return $this->hasMany(Skill::class); // A user can have many skills
     }
 
     /**

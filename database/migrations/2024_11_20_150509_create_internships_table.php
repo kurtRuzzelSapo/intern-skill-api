@@ -17,7 +17,9 @@ return new class extends Migration
             $table->string('title'); // Internship title
             $table->text('desc'); // Description
             $table->string('location'); // Location
-            $table->decimal('salary', 10, 2); // Salary
+            $table->decimal('salary', 10, 2)->nullable(); // Salary
+            $table->date('start');
+            $table->date('end');
             $table->string('category'); // Category of the internship
             $table->string('start_status'); // Status of if it is needed
             $table->date('deadline'); // The post will be deleted by the date of this

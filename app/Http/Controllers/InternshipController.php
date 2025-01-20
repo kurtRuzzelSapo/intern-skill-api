@@ -4,74 +4,123 @@ namespace App\Http\Controllers;
 
 use App\Models\Application;
 use App\Models\Internship;
+use App\Models\InternshipSkill;
+use App\Models\RecruiterProfile;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 //This is for creating the Internship for Intern who wants to apply
 class InternshipController extends Controller
 {
     // Display a list of recruiter profiles
     public function index()
-    {
-        $interns = Internship::with(['recruiter.user'])->get();
-        return response()->json($interns, 200);
-    }
+{
+    $interns = Internship::with(['recruiter.user', 'skills'])->get();
+    return response()->json($interns, 200);
+}
 
-    // Create a post for Internship
     public function store(Request $request)
-    {
-        try {
-            // Log the incoming request data
-            Log::info('Request data:', $request->all());
+{
+    // Validate the request data
+    $validated = $request->validate([
+        'recruiter_id' => 'required|exists:recruiter_profiles,id',
+        'title' => 'required|string',
+        'desc' => 'required|string',
+        'location' => 'required|string',
+        'salary' => 'nullable|numeric|min:0|max:1000000',
+        'category' => 'required|string',
+        'start_status' => 'required|string',
+        'deadline' => 'required|date',
+        'skill' => 'required|array',
+        'skill.*' => 'required|string',
+    ]);
 
-            // Validate the request data
-            $validated = $request->validate([
-                'recruiter_id' => 'required|exists:recruiter_profiles,id',
-                'title' => 'required|string',
-                'desc' => 'required|string',
-                'skills_required' => 'nullable|string',
-                'location' => 'required|string',
-                'salary' => 'required|numeric',
-                'duration' => 'required|string',
-                'start_status' => 'required|string',
-                'apply_by' => 'required|string',
-                'other_requirements' => 'required|string',
+    try {
+        // Start transaction
+        DB::beginTransaction();
+
+        // Create the internship
+        $internship = Internship::create([
+            'recruiter_id' => $validated['recruiter_id'],
+            'title' => $validated['title'],
+            'desc' => $validated['desc'],
+            'location' => $validated['location'],
+            'salary' => $validated['salary'],
+            'category' => $validated['category'],
+            'start_status' => $validated['start_status'],
+            'deadline' => $validated['deadline'],
+        ]);
+
+        // Add skills to the internship
+        foreach ($validated['skill'] as $skill) {
+            InternshipSkill::create([
+                'internship_id' => $internship->id,
+                'skill' => strtolower(trim($skill)),
             ]);
-
-            // Create the internship using validated data
-            $intern = Internship::create([
-                'recruiter_id' => $validated['recruiter_id'],
-                'title' => $validated['title'],
-                'desc' => $validated['desc'],
-                'skills_required' => $validated['skills_required'] ?? null,
-                'location' => $validated['location'],
-                'salary' => $validated['salary'],
-                'duration' => $validated['duration'],
-                'start_status' => $validated['start_status'],
-                'apply_by' => $validated['apply_by'],
-                'other_requirements' => $validated['other_requirements'],
-            ]);
-
-            return response()->json($intern, 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            // Handle validation errors specifically
-            Log::error('Validation Error:', ['errors' => $e->errors()]);
-            return response()->json([
-                'error' => 'Validation failed',
-                'details' => $e->errors()
-            ], 422);
-        } catch (Exception $e) {
-            Log::error('Internship Creation Error:', ['message' => $e->getMessage()]);
-            return response()->json([
-                'error' => 'An error occurred while creating the Internship.',
-                'details' => $e->getMessage()
-            ], 500);
         }
+
+        // Fetch recruiter profile and user details
+        $recruiterProfile = RecruiterProfile::with('user')->find($validated['recruiter_id']);
+
+        // Commit transaction
+        DB::commit();
+
+        // Return success response
+        return response()->json([
+            'id' => $internship->id,
+            'title' => $internship->title,
+            'desc' => $internship->desc,
+            'location' => $internship->location,
+            'salary' => number_format($internship->salary, 2),
+            'category' => $internship->category,
+            'start_status' => $internship->start_status,
+            'deadline' => $internship->deadline,
+            'created_at' => $internship->created_at,
+            'updated_at' => $internship->updated_at,
+            'recruiter' => [
+                'id' => $recruiterProfile->id,
+                'company' => $recruiterProfile->company,
+                'industry' => $recruiterProfile->industry,
+                'position' => $recruiterProfile->position,
+                'about' => $recruiterProfile->about,
+                'cover_image' => $recruiterProfile->cover_image,
+                'created_at' => $recruiterProfile->created_at,
+                'updated_at' => $recruiterProfile->updated_at,
+                'user' => [
+                    'id' => $recruiterProfile->user->id,
+                    'fullname' => $recruiterProfile->user->fullname,
+                    'email' => $recruiterProfile->user->email,
+                    'phone_number' => $recruiterProfile->user->phone_number,
+                    'address' => $recruiterProfile->user->address,
+                    'gender' => $recruiterProfile->user->gender,
+                    'role' => $recruiterProfile->user->role,
+                    'profile_image' => $recruiterProfile->user->profile_image,
+                    'created_at' => $recruiterProfile->user->created_at,
+                    'updated_at' => $recruiterProfile->user->updated_at,
+                ],
+            ],
+        ], 201);
+
+    } catch (\Exception $e) {
+        // Rollback transaction on error
+        DB::rollBack();
+
+        // Log the exception
+        Log::error('Error creating internship: ' . $e->getMessage());
+
+        // Return error response
+        return response()->json([
+            'error' => 'An error occurred while creating the internship.',
+            'details' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
     // Show a specific intern profile
     // Text Search based of Title and Location
