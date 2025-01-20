@@ -18,7 +18,9 @@ class Internship extends Model
         'apply_by',
         'other_requirements',
         'category',
-        'deadline'
+        'deadline',
+        'start',
+        'end'
          // Add category here
     ];
 
@@ -36,12 +38,17 @@ class Internship extends Model
 
    public function applications()
 {
-    return $this->hasMany(Application::class);
+    return $this->hasMany(Application::class, 'internship_id');
 }
 
-public function applicants()
-{
-    return $this->belongsToMany(User::class, 'applications', 'internship_id', 'applicant_id')
-                ->withPivot('cover_letter', 'resume', 'status', 'created_at', 'updated_at');
-}
+   public function userApplicant()
+    {
+    return $this->hasMany(User::class, 'applicant_id' , 'id');
+    }
+
+// public function applicants()
+// {
+//     return $this->belongsToMany(User::class, 'applications', 'internship_id', 'applicant_id')
+//                 ->withPivot('cover_letter', 'resume', 'status', 'created_at', 'updated_at');
+// }
 }

@@ -43,6 +43,12 @@ public function appliedInternships()
 }
 
 
+public function user()
+{
+    return $this->belongsTo(User::class, 'user_id');
+}
+
+
     public function internProfile()
     {
         return $this->hasOne(InternProfile::class, 'user_id');

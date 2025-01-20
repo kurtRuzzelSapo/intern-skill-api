@@ -76,6 +76,10 @@ class Authcontroller extends Controller
                     return response()->json(['error' => 'No intern profile found for this user.'], 404);
                 }
 
+                if ($internProfile->resume) {
+                    $internProfile->resume_url = url('storage/' . $internProfile->resume);
+                }
+
                 return response()->json([
                     'user' => $user,
                     'intern_profile' => $internProfile,
@@ -259,10 +263,65 @@ class Authcontroller extends Controller
             'error' => $exception->getMessage(),
         ], 500);
     }
-
-
-
-
 }
+
+
+public function updateResume(Request $request)
+{
+    // Logging the request data as an array
+    Log::info('Request Data:', ['data' => $request->all()]); // Log request data
+
+    // Check if 'resume' file is present
+    if ($request->hasFile('resume')) {
+        Log::info('File Uploaded:', ['file' => $request->file('resume')->getClientOriginalName()]); // Log the file name
+    } else {
+        Log::info('No file uploaded.');
+    }
+
+    // Validate the request
+    $validated = $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'resume' => 'required|file|mimes:pdf,doc,docx,jpeg,jpg,png|max:2048',
+    ]);
+
+    try {
+        // Fetch the existing intern profile
+        $internProfile = InternProfile::where('user_id', $request->user_id)->first();
+
+        if (!$internProfile) {
+            return response()->json(['message' => 'Intern profile not found.'], 404);
+        }
+
+        // If there's an existing resume, delete it from storage
+        if ($internProfile->resume) {
+            Storage::disk('public')->delete($internProfile->resume);
+            Log::info('Old Resume Deleted:', ['path' => $internProfile->resume]);
+        }
+
+        // Store the new resume file
+        $path = $request->file('resume')->store('resumes', 'public');
+
+
+        // Update the intern profile with the new resume path
+        $internProfile->update(['resume' => $path]);
+
+        // Returning response with the resume URL
+        Log::info('Resume Updated Successfully:', ['resume_url' => Storage::url($path)]);
+
+        return response()->json([
+            'message' => 'Resume updated successfully.',
+            'resume_url' => Storage::url($path),
+        ], 200);
+
+    } catch (\Exception $exception) {
+        Log::error('Error updating resume:', ['message' => $exception->getMessage()]);
+        return response()->json(['error' => 'Failed to update resume.'], 500);
+    }
+}
+
+
+
+
+
 
 }

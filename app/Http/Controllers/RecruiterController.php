@@ -89,6 +89,8 @@ class RecruiterController extends Controller
 }
 
 
+
+
     // Show a specific intern profile
     public function show($id)
     {

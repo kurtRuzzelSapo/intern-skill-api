@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\Internship;
 use App\Models\InternshipSkill;
 use App\Models\RecruiterProfile;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,9 +20,50 @@ class InternshipController extends Controller
     // Display a list of recruiter profiles
     public function index()
 {
-    $interns = Internship::with(['recruiter.user', 'skills'])->get();
+    $interns = Internship::with(['recruiter.user', 'skills' , 'applications.applicant.user'])->get();
     return response()->json($interns, 200);
 }
+
+
+public function getMyInternships($recruiter_id)
+{
+    try {
+        // Get the recruiter user (based on recruiter_id)
+        $user = User::find($recruiter_id);
+
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
+        // Retrieve internships created by the recruiter with relationships
+        $internships = Internship::with([
+            'recruiter.user',          // Load recruiter and their user details
+            'skills',                  // Load associated skills
+            'applications.applicant'   // Load applications and their applicant details
+        ])
+        ->where('recruiter_id', $user->id) // Filter by recruiter_id
+        ->latest()                    // Order by the latest
+        ->get();
+
+        return response()->json([
+            'internships' => $internships,
+        ], 200);
+
+    } catch (Exception $e) {
+        // Log the error for debugging
+        Log::error('Error fetching recruiter internships: ', [
+            'message' => $e->getMessage(),
+            'recruiter_id' => $recruiter_id, // Log the recruiter ID passed
+        ]);
+
+        return response()->json([
+            'error' => 'An error occurred while retrieving the internships.',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 
     public function store(Request $request)
 {
@@ -35,6 +77,8 @@ class InternshipController extends Controller
         'category' => 'required|string',
         'start_status' => 'required|string',
         'deadline' => 'required|date',
+        'start' => 'required|date',
+        'end' => 'required|date',
         'skill' => 'required|array',
         'skill.*' => 'required|string',
     ]);
@@ -53,6 +97,8 @@ class InternshipController extends Controller
             'category' => $validated['category'],
             'start_status' => $validated['start_status'],
             'deadline' => $validated['deadline'],
+            'start' => $validated['start'],
+            'end' => $validated['end'],
         ]);
 
         // Add skills to the internship
@@ -79,6 +125,8 @@ class InternshipController extends Controller
             'category' => $internship->category,
             'start_status' => $internship->start_status,
             'deadline' => $internship->deadline,
+            'start' => $internship->start,
+            'end' => $internship->end,
             'created_at' => $internship->created_at,
             'updated_at' => $internship->updated_at,
             'recruiter' => [

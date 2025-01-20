@@ -215,77 +215,63 @@ class InternController extends Controller
 }
 
 
+
 public function applyForInternship(Request $request)
 {
     try {
-        // Get the authenticated user first
-        $user = Auth::user();
-
-        // Add debug logging
-        Log::info('User attempting to apply:', [
-            'token_user_id' => $user ? $user->id : 'no user',
-            'token' => $request->bearerToken(),
-            'request_data' => $request->all()
-        ]);
+        // Get the authenticated user
 
         // Validate incoming data
         $validated = $request->validate([
             'internship_id' => 'required|exists:internships,id',
-            'cover_letter' => 'required|string',
-            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'applicant_id' => 'required',
+            'resume' => 'required|string',
         ]);
 
-        // Check if user is authenticated
-        if (!$user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
 
-        // Check for existing application using the user object directly
-        $existingApplication = Application::where('internship_id', $validated['internship_id'])
-            ->where('applicant_id', $user->id)  // Use $user->id instead of Auth::id()
-            ->first();
-
-        if ($existingApplication) {
-            return response()->json([
-                'error' => 'You have already applied for this internship.',
-                'user_id' => $user->id,
-                'existing_application' => $existingApplication
-            ], 409);
-        }
 
         // Handle resume upload
         $resumePath = null;
         if ($request->hasFile('resume')) {
-            $resumePath = $request->file('resume')->store('resumes', 'public');
+            $file = $request->file('resume');
+            $resumePath = $file->store('resumes', 'public');
         }
 
-        // Create the application record using the user object
+        // Generate URL for the uploaded resume
+        $resumeUrl = $resumePath ? Storage::url($resumePath) : null;
+
+        // Check for existing application
+        $existingApplication = Application::where('internship_id', $validated['internship_id'])
+            ->where('applicant_id', $request->applicant_id)
+            ->first();
+
+        if ($existingApplication) {
+            return response()->json(['error' => 'You have already applied for this internship.'], 409);
+        }
+
+        // Create the application record with the resume URL
         $application = Application::create([
-            'internship_id' => $validated['internship_id'],
-            'applicant_id' => $user->id,  // Use $user->id instead of Auth::id()
-            'cover_letter' => $validated['cover_letter'],
-            'resume' => $resumePath,
+            'internship_id' => $request->internship_id,
+            'applicant_id' => $request->applicant_id,
+            'resume' => $request->resume, // Store the URL here
             'status' => 'pending',
         ]);
 
         return response()->json([
             'message' => 'Your application has been submitted successfully.',
             'application' => $application,
-            'user_id' => $user->id,  // Added for debugging
-            'token' => $request->bearerToken() ? 'Present' : 'Missing'  // Added for debugging
+            'resume_url' => $resumeUrl,  // Return the URL of the uploaded resume
         ], 201);
 
     } catch (Exception $e) {
-        Log::error('Application submission error: ' . $e->getMessage(), [
-            'user_id' => Auth::id(),
-            'token' => $request->bearerToken() ? 'Present' : 'Missing'
-        ]);
         return response()->json([
             'error' => 'An error occurred while submitting your application.',
             'details' => $e->getMessage()
         ], 500);
     }
 }
+
+
 
 public function showMyApplications()
 {

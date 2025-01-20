@@ -51,10 +51,17 @@ Route::post('forum/{forum}/restore', [ForumController::class, 'restore'])->middl
 // =======INTERN CONNECT=============
 
 // RECRUITER
+Route::post('resume', [Authcontroller::class, 'updateResume']);
+
+Route::post('apply', [InternController::class, 'applyForInternship']);
 
 Route::post('internship', [InternshipController::class, 'store']);
 
 Route::get('internship', [InternshipController::class, 'index']);
+
+Route::get('/myInternships/{id}', [InternshipController::class, 'getMyInternships']);
+// INTERN
+
 
 
 
@@ -86,37 +93,37 @@ Route::get('internship', [InternshipController::class, 'index']);
 // Route::apiResource('like', LikeController::class)->middleware('auth:sanctum');
 
 // ADMIN ROUTE
-Route::middleware('auth:sanctum')->group(function () {
-    Route::middleware('role:admin')->group(function () {
-        Route::apiResource('admin', AdminController::class);
-    });
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::middleware('role:admin')->group(function () {
+//         Route::apiResource('admin', AdminController::class);
+//     });
 
-// RECRUITER ROUTE
+// // RECRUITER ROUTE
 
-    Route::apiResource('recruiter', RecruiterController::class);
-    Route::apiResource('internships', InternshipController::class);
-    // Route::get('/intern/mydata', [RecruiterController::class, 'getMyData']);
-    Route::get('/recruiter/internships', [RecruiterController::class, 'getRecruiterInternships']);
-    Route::get('recruiter/{recruiterId}/internships', [RecruiterController::class, 'getRecruiterInternshipsById']);
-    Route::patch('applications/{applicationId}/status', [RecruiterController::class, 'updateApplicationStatus']);
-
-
-// INTERN ROUTE
-
-        Route::apiResource('intern', InternController::class);
-        //GETTING MY OWN DATA
-        // Route::get('/intern/mydata', [InternController::class, 'getMyData']);
-        Route::get('/intern/my-applications/{id}', [InternController::class, 'showMyApplications']);
-        Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
-
-//SKILL LINK ROUTES
+//     Route::apiResource('recruiter', RecruiterController::class);
+//     Route::apiResource('internships', InternshipController::class);
+//     // Route::get('/intern/mydata', [RecruiterController::class, 'getMyData']);
+//     Route::get('/recruiter/internships', [RecruiterController::class, 'getRecruiterInternships']);
+//     Route::get('recruiter/{recruiterId}/internships', [RecruiterController::class, 'getRecruiterInternshipsById']);
+//     Route::patch('applications/{applicationId}/status', [RecruiterController::class, 'updateApplicationStatus']);
 
 
-        Route::apiResource('forum', ForumController::class);
+// // INTERN ROUTE
 
-        Route::post('/forums/{forum}/share-to-profile', [ForumController::class, 'shareToProfile']);
-        // Route::post('forum/{forum}/like', [LikeController::class, 'store']);
-});
+//         Route::apiResource('intern', InternController::class);
+//         //GETTING MY OWN DATA
+//         // Route::get('/intern/mydata', [InternController::class, 'getMyData']);
+//         Route::get('/intern/my-applications/{id}', [InternController::class, 'showMyApplications']);
+//         Route::post('/intern/apply', [InternController::class, 'applyForInternship']);
+
+// //SKILL LINK ROUTES
+
+
+//         Route::apiResource('forum', ForumController::class);
+
+//         Route::post('/forums/{forum}/share-to-profile', [ForumController::class, 'shareToProfile']);
+//         // Route::post('forum/{forum}/like', [LikeController::class, 'store']);
+// });
 
 
 
