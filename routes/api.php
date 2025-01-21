@@ -55,6 +55,8 @@ Route::post('resume', [Authcontroller::class, 'updateResume']);
 
 Route::post('apply', [InternController::class, 'applyForInternship']);
 
+Route::post('/applications/{applicationId}/status', [RecruiterController::class, 'updateApplicationStatus']);
+
 Route::post('internship', [InternshipController::class, 'store']);
 
 Route::get('internship', [InternshipController::class, 'index']);

@@ -25,6 +25,13 @@ class Internship extends Model
     ];
 
 
+    protected $appends = ['resume_url'];
+
+    public function getResumeUrlAttribute()
+    {
+        return $this->resume ? asset('storage/' . $this->resume) : null;
+    }
+
    public function recruiter()
    {
        return $this->belongsTo(RecruiterProfile::class);

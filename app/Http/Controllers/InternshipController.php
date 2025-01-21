@@ -20,40 +20,52 @@ class InternshipController extends Controller
     // Display a list of recruiter profiles
     public function index()
 {
-    $interns = Internship::with(['recruiter.user', 'skills' , 'applications.applicant.user'])->get();
-    return response()->json($interns, 200);
+    $interns = Internship::with(['recruiter.user', 'skills', 'applications.applicant.user'])->get();
+
+    return response()->json($interns->map(function ($intern) {
+        $intern->resume = $intern->resume ? url('storage/' . $intern->resume) : null;
+        return $intern;
+    }), 200);
 }
+
+
 
 
 public function getMyInternships($recruiter_id)
 {
     try {
-        // Get the recruiter user (based on recruiter_id)
-        $user = User::find($recruiter_id);
+        // Verify the recruiter exists
+        $recruiterProfile = RecruiterProfile::where('user_id', $recruiter_id)->first();
 
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
+        if (!$recruiterProfile) {
+            return response()->json(['error' => 'Recruiter profile not found'], 404);
         }
 
-        // Retrieve internships created by the recruiter with relationships
+        // Retrieve internships created by the recruiter
         $internships = Internship::with([
-            'recruiter.user',          // Load recruiter and their user details
-            'skills',                  // Load associated skills
-            'applications.applicant'   // Load applications and their applicant details
+            'recruiter.user',
+            'skills',
+            'applications.applicant'
         ])
-        ->where('recruiter_id', $user->id) // Filter by recruiter_id
-        ->latest()                    // Order by the latest
+        ->where('recruiter_id', $recruiterProfile->id)
+        ->latest()
         ->get();
+
+        // Append full resume URL for each application
+        $internships->each(function ($internship) {
+            $internship->applications->each(function ($application) {
+                $application->resume = $application->resume ? url('storage/' . $application->resume) : null;
+            });
+        });
 
         return response()->json([
             'internships' => $internships,
         ], 200);
 
     } catch (Exception $e) {
-        // Log the error for debugging
         Log::error('Error fetching recruiter internships: ', [
             'message' => $e->getMessage(),
-            'recruiter_id' => $recruiter_id, // Log the recruiter ID passed
+            'recruiter_id' => $recruiter_id,
         ]);
 
         return response()->json([
@@ -62,6 +74,8 @@ public function getMyInternships($recruiter_id)
         ], 500);
     }
 }
+
+
 
 
 

@@ -292,6 +292,52 @@ public function getRecruiterInternshipsById($recruiterId)
           }
       }
 
+// public function updateApplicationStatus(Request $request, $applicationId)
+// {
+//     try {
+//         // Validate the request
+//         $validatedData = $request->validate([
+//             'status' => 'required|string|in:accepted,rejected'
+//         ]);
+
+//         // Find the application
+//         $application = Application::with(['internship.recruiter', 'applicant'])->findOrFail($applicationId);
+
+//         // Check if the authenticated recruiter owns the internship
+//         $internship = $application->internship;
+//         if ($internship->recruiter_id != $request->user()->recruiterProfile->id) {
+//             return response()->json([
+//                 'error' => 'Unauthorized to update this application'
+//             ], 403);
+//         }
+
+//         // Update the application status
+//         $application->update([
+//             'status' => $validatedData['status']
+//         ]);
+
+//         // Send notification to the applicant
+//         $application->applicant->notify(new ApplicationStatusUpdated($application));
+
+//         return response()->json([
+//             'message' => 'Application status updated successfully',
+//             'application' => $application
+//         ], 200);
+
+//     } catch (ModelNotFoundException $e) {
+//         return response()->json([
+//             'error' => 'Application not found'
+//         ], 404);
+//     } catch (Exception $e) {
+//         Log::error('Application Status Update Error: ', ['message' => $e->getMessage()]);
+//         return response()->json([
+//             'error' => 'An error occurred while updating the application status',
+//             'details' => $e->getMessage()
+//         ], 500);
+//     }
+// }
+
+
 public function updateApplicationStatus(Request $request, $applicationId)
 {
     try {
@@ -301,15 +347,7 @@ public function updateApplicationStatus(Request $request, $applicationId)
         ]);
 
         // Find the application
-        $application = Application::with(['internship.recruiter', 'applicant'])->findOrFail($applicationId);
-
-        // Check if the authenticated recruiter owns the internship
-        $internship = $application->internship;
-        if ($internship->recruiter_id != $request->user()->recruiterProfile->id) {
-            return response()->json([
-                'error' => 'Unauthorized to update this application'
-            ], 403);
-        }
+        $application = Application::with(['internship.recruiter', 'applicant' ,'users'])->findOrFail($applicationId);
 
         // Update the application status
         $application->update([
@@ -329,11 +367,12 @@ public function updateApplicationStatus(Request $request, $applicationId)
             'error' => 'Application not found'
         ], 404);
     } catch (Exception $e) {
-        Log::error('Application Status Update Error: ', ['message' => $e->getMessage()]);
+        Log::error('Application Status Update Error:', ['message' => $e->getMessage()]);
         return response()->json([
             'error' => 'An error occurred while updating the application status',
             'details' => $e->getMessage()
         ], 500);
     }
 }
+
 }

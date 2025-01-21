@@ -29,7 +29,8 @@ class ApplicationStatusUpdated extends Notification
             $status = $this->application->status;
             $internshipTitle = $this->application->internship->title;
             $companyName = $this->application->internship->recruiter->company;
-            $recruiterEmail = $this->application->internship->recruiter->email;
+            $recruiterEmail = $this->application->users->email ?? 'TechnoCompany@gmail.com';
+
             return (new MailMessage)
                 ->subject("Your Application Status Has Been Updated")
                 ->greeting("Hello " . $notifiable->fullname)
