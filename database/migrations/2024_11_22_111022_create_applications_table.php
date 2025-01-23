@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('cover_letter')->nullable(); // Cover letter
             $table->string('resume')->nullable(); // Resume file path
             $table->string('status')->default('pending'); // Application status (e.g., pending, accepted, rejected)
+            
             $table->timestamps(); // Created at and updated at
 
             // Foreign key constraints

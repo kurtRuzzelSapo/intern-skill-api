@@ -12,10 +12,12 @@ class ApplicationStatusUpdated extends Notification
     use Queueable;
 
     protected $application;
+    protected $userEmail;
 
-    public function __construct(Application $application)
+    public function __construct(Application $application, $userEmail)
     {
         $this->application = $application;
+        $this->userEmail = $userEmail;  // Store the user email
     }
 
     public function via($notifiable): array
@@ -29,7 +31,7 @@ class ApplicationStatusUpdated extends Notification
             $status = $this->application->status;
             $internshipTitle = $this->application->internship->title;
             $companyName = $this->application->internship->recruiter->company;
-            $recruiterEmail = $this->application->users->email ?? 'TechnoCompany@gmail.com';
+            $recruiterEmail = $this->userEmail ?? 'TechnoCompany@gmail.com';
 
             return (new MailMessage)
                 ->subject("Your Application Status Has Been Updated")
