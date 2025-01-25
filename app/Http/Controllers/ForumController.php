@@ -16,49 +16,6 @@ use Illuminate\Support\Facades\Storage;
 
 class ForumController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    // public function index()
-    // {
-    //     try {
-    //         $perPage = request('per_page', 5);
-
-    //         // Get posts by interns with pagination
-    //         $internPosts = Forum::whereHas('user', function ($query) {
-    //             $query->where('role', 'intern');
-    //         })->with('user', 'comments', 'likes', 'images')
-    //             ->latest()
-    //             ->paginate($perPage);
-
-    //         // Get posts by recruiters with pagination
-    //         $recruiterPosts = Forum::whereHas('user', function ($query) {
-    //             $query->where('role', 'recruiter');
-    //         })->with('user', 'comments', 'likes', 'images')
-    //             ->latest()
-    //             ->paginate($perPage);
-
-    //         // Transform image URLs
-    //         foreach ([$internPosts, $recruiterPosts] as $collection) {
-    //             $collection->transform(function ($post) {
-    //                 $post->images->transform(function ($image) {
-    //                     $image->image_path = Storage::url($image->image_path);
-    //                     return $image;
-    //                 });
-    //                 return $post;
-    //             });
-    //         }
-
-    //         return response()->json([
-    //             'intern_posts' => $internPosts,
-    //             'recruiter_posts' => $recruiterPosts
-    //         ]);
-
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => $e->getMessage()], 403);
-    //     }
-    // }
-
      public function index()
      {
          try {
@@ -207,6 +164,7 @@ class ForumController extends Controller
         $validated = FacadesValidator::make($request->all(), [
             'title' => 'required|string',
             'desc' => 'required|string',
+            'specialization' => 'required|string',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validate multiple images
         ]);
 
@@ -218,9 +176,10 @@ class ForumController extends Controller
             $post = new Forum();
             $post->title = $request->title;
             $post->desc = $request->desc;
+            $post->specialization = $request->specialization;
 
             // Save the forum post first to get its ID
-            $post->user_id = Auth::id();
+            $post->user_id = $request->user_id;
             $post->save();
 
             // Handle image upload
@@ -370,4 +329,45 @@ public function forceDestroy(Forum $forum)
             ], 500);
         }
   }
+
+
+  public function getFilterForum(Request $request)
+{
+    try {
+        // Get the authenticated user from the request
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'User not authenticated'], 401);
+        }
+
+        // Get the user's specializations
+        $specializations = $user->specializations->pluck('specialization');
+
+        // Get forums based on specialization
+        $forumsBySpecialization = Forum::whereHas('user.specializations', function ($query) use ($specializations) {
+            $query->whereIn('specialization', $specializations);
+        })
+            ->with('user', 'comments', 'likes', 'images')
+            ->withCount('comments', 'likes', 'images')
+            ->latest()
+            ->get()
+            ->map(function ($post) {
+                // Map over the images to include the full URL
+                $post->images = $post->images->map(function ($image) {
+                    $image->image_path = Storage::url($image->image_path);
+                    return $image;
+                });
+                return $post;
+            });
+
+        // Return the forums filtered by specialization
+        return response()->json([
+            'forums_by_specialization' => $forumsBySpecialization,
+        ], 200);
+
+    } catch (\Exception $exception) {
+        return response()->json(['error' => $exception->getMessage()], 403);
+    }
+}
+
 }

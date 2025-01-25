@@ -69,6 +69,11 @@ public function user()
         return $this->belongsToMany(Forum::class, 'forum_user')->withTimestamps();
     }
 
+    public function specializations()
+    {
+    return $this->hasMany(Specialization::class);
+    }
+
     public function skills()
     {
     return $this->hasMany(Skill::class); // A user can have many skills

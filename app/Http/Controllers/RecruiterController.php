@@ -419,4 +419,39 @@ public function scheduleApplicationStatus(Request $request, $applicationId)
     }
 }
 
+
+public function GetMyApplications($applicant_id)
+{
+    try {
+        // Fetch the applications by applicant_id and include related internship and recruiter profile data
+        $applications = Application::with(['internship', 'internship.recruiterProfile']) // Eager load internship and recruiter profile
+            ->where('applicant_id', $applicant_id)
+            ->where('status', 'accepted') // Filter by applicant_id
+            ->get(); // Use get() to retrieve all applications for the given applicant
+
+        // Check if any applications were found
+        if ($applications->isEmpty()) {
+            return response()->json(['error' => 'No applications found for this applicant'], 404);
+        }
+
+        // Return the applications with related internship and recruiter information
+        return response()->json([
+            'success' => true,
+            'applications' => $applications, // Contains all applications for the given applicant
+        ]);
+    } catch (\Throwable $th) {
+        // Handle errors
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve applications',
+            'error' => $th->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+
+
 }
