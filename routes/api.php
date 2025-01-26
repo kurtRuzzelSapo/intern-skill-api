@@ -70,6 +70,9 @@ Route::get('internship', [InternshipController::class, 'index']);
 Route::get('/interviews/{application_id}', [RecruiterController::class, 'GetMyApplications']);
 
 Route::get('/myInternships/{id}', [InternshipController::class, 'getMyInternships']);
+
+Route::get('/interns/all', [InternController::class, 'index']);
+
 // INTERN
 
 
