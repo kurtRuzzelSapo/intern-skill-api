@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator as FacadesValidator;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\ResourcesSinglePostResource;
+use App\Models\specialization;
 use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -90,6 +91,102 @@ class ForumController extends Controller
              return response()->json(['error' => $exception->getMessage()], 403);
          }
      }
+
+
+     public function getFilteredForumsByUserSpecializations(Request $request)
+     {
+        
+         try {
+             // Validate that user_id is provided
+             $userId = $request->user_id;
+             if (!$userId) {
+                 return response()->json(['error' => 'User ID is required'], 400);
+             }
+
+             // Fetch the user's specializations from the Specialization table
+             $specializations = Specialization::where('user_id', $userId)->pluck('specialization');
+             if ($specializations->isEmpty()) {
+                 return response()->json(['error' => 'No specializations found for the user'], 404);
+             }
+
+             // Get all forums filtered by user's specializations
+             $forums = Forum::whereIn('specialization', $specializations)
+                 ->with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($forum) {
+                     $forum->images = $forum->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $forum;
+                 });
+
+             // Get top 3 forums filtered by user's specializations
+             $topForums = Forum::whereIn('specialization', $specializations)
+                 ->with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->orderByRaw('(likes_count + comments_count) DESC')
+                 ->limit(3)
+                 ->get()
+                 ->map(function ($forum) {
+                     $forum->images = $forum->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $forum;
+                 });
+
+             // Get intern forums filtered by user's specializations
+             $internForums = Forum::whereIn('specialization', $specializations)
+                 ->whereHas('user', function ($query) {
+                     $query->where('role', 'intern');
+                 })
+                 ->with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($forum) {
+                     $forum->images = $forum->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $forum;
+                 });
+
+             // Get recruiter forums filtered by user's specializations
+             $recruiterForums = Forum::whereIn('specialization', $specializations)
+                 ->whereHas('user', function ($query) {
+                     $query->where('role', 'recruiter');
+                 })
+                 ->with('user', 'comments', 'likes', 'images')
+                 ->withCount('comments', 'likes', 'images')
+                 ->latest()
+                 ->get()
+                 ->map(function ($forum) {
+                     $forum->images = $forum->images->map(function ($image) {
+                         $image->image_path = Storage::url($image->image_path);
+                         return $image;
+                     });
+                     return $forum;
+                 });
+
+             // Return all filtered posts
+             return response()->json([
+                 'posts' => $forums,
+                 'top_posts' => $topForums,
+                 'intern_posts' => $internForums,
+                 'recruiter_posts' => $recruiterForums
+             ], 200);
+         } catch (\Exception $exception) {
+             return response()->json(['error' => $exception->getMessage()], 500);
+         }
+
+     }
+
+
+
 
 
 
@@ -331,43 +428,45 @@ public function forceDestroy(Forum $forum)
   }
 
 
-  public function getFilterForum(Request $request)
-{
-    try {
-        // Get the authenticated user from the request
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
 
-        // Get the user's specializations
-        $specializations = $user->specializations->pluck('specialization');
 
-        // Get forums based on specialization
-        $forumsBySpecialization = Forum::whereHas('user.specializations', function ($query) use ($specializations) {
-            $query->whereIn('specialization', $specializations);
-        })
-            ->with('user', 'comments', 'likes', 'images')
-            ->withCount('comments', 'likes', 'images')
-            ->latest()
-            ->get()
-            ->map(function ($post) {
-                // Map over the images to include the full URL
-                $post->images = $post->images->map(function ($image) {
-                    $image->image_path = Storage::url($image->image_path);
-                    return $image;
-                });
-                return $post;
-            });
+// public function getFilterForums(Request $request)
+// {
+//     try {
+//         // Get the authenticated user from the request
+//         $user = $request->user();
+//         if (!$user) {
+//             return response()->json(['error' => 'User not authenticated'], 401);
+//         }
 
-        // Return the forums filtered by specialization
-        return response()->json([
-            'forums_by_specialization' => $forumsBySpecialization,
-        ], 200);
+//         // Get the user's specializations
+//         $specializations = $user->specializations->pluck('specialization');
 
-    } catch (\Exception $exception) {
-        return response()->json(['error' => $exception->getMessage()], 403);
-    }
-}
+//         // Get forums based on specialization
+//         $forumsBySpecialization = Forum::whereHas('user.specializations', function ($query) use ($specializations) {
+//             $query->whereIn('specialization', $specializations);
+//         })
+//             ->with('user', 'comments', 'likes', 'images')
+//             ->withCount('comments', 'likes', 'images')
+//             ->latest()
+//             ->get()
+//             ->map(function ($post) {
+//                 // Map over the images to include the full URL
+//                 $post->images = $post->images->map(function ($image) {
+//                     $image->image_path = Storage::url($image->image_path);
+//                     return $image;
+//                 });
+//                 return $post;
+//             });
+
+//         // Return the forums filtered by specialization
+//         return response()->json([
+//             'forums_by_specialization' => $forumsBySpecialization,
+//         ], 200);
+
+//     } catch (\Exception $exception) {
+//         return response()->json(['error' => $exception->getMessage()], 403);
+//     }
+// }
 
 }

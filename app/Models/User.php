@@ -49,6 +49,8 @@ public function user()
 }
 
 
+
+
     public function internProfile()
     {
         return $this->hasOne(InternProfile::class, 'user_id');
@@ -73,6 +75,8 @@ public function user()
     {
     return $this->hasMany(Specialization::class);
     }
+
+
 
     public function skills()
     {

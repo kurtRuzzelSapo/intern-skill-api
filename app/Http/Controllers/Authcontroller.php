@@ -446,44 +446,7 @@ public function getSpecialization()
 }
 
 
-public function getFilterForums(Request $request)
-{
-    try {
-        // Get the authenticated user from the request
-        $user = $request->user();
-        if (!$user) {
-            return response()->json(['error' => 'User not authenticated'], 401);
-        }
 
-        // Get the user's specializations
-        $specializations = $user->specializations->pluck('specialization');
-
-        // Get forums based on specialization
-        $forumsBySpecialization = Forum::whereHas('user.specializations', function ($query) use ($specializations) {
-            $query->whereIn('specialization', $specializations);
-        })
-            ->with('user', 'comments', 'likes', 'images')
-            ->withCount('comments', 'likes', 'images')
-            ->latest()
-            ->get()
-            ->map(function ($post) {
-                // Map over the images to include the full URL
-                $post->images = $post->images->map(function ($image) {
-                    $image->image_path = Storage::url($image->image_path);
-                    return $image;
-                });
-                return $post;
-            });
-
-        // Return the forums filtered by specialization
-        return response()->json([
-            'forums_by_specialization' => $forumsBySpecialization,
-        ], 200);
-
-    } catch (\Exception $exception) {
-        return response()->json(['error' => $exception->getMessage()], 403);
-    }
-}
 
 
 

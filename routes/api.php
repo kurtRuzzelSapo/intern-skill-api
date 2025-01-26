@@ -28,7 +28,6 @@ Route::get('/mydata/{id}', [AuthController::class, 'getMyData']);
 
 Route::get('specializations/post', [AuthController::class, 'getSpecialization']);
 
-Route::get('specializations/myFilter', [AuthController::class, 'getFilterForums']);
 
 
 // FORUM ROUTE THIS IS FOR ALL USERS (SKILL LINK)
@@ -41,6 +40,8 @@ Route::apiResource('comment', CommentController::class);
 Route::post('/reply', [CommentController::class, 'reply']);
 
 Route::get('/comments/{forumId}', [CommentController::class, 'showComments']);
+
+Route::get('specializations/myFilter/{user_id}', [ForumController::class, 'getFilteredForumsByUserSpecializations']);
 
 Route::get('/user/{id}/forums', [ForumController::class, 'getMyForum']);
 
