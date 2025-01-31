@@ -343,19 +343,22 @@ public function updateApplicationStatus(Request $request, $applicationId)
     try {
         // Validate the request
         $validatedData = $request->validate([
-            'status' => 'required|string|in:accepted,rejected'
+            'status' => 'required|string|in:accepted,rejected',
+            'user_id' => 'required|integer|exists:users,id',
         ]);
 
         // Find the application
         $application = Application::with(['internship.recruiter', 'applicant' ,'users'])->findOrFail($applicationId);
-
+          // Get the email of the user
+          $user = User::findOrFail($validatedData['user_id']);
+          $userEmail = $user->email;
         // Update the application status
         $application->update([
             'status' => $validatedData['status']
         ]);
 
         // Send notification to the applicant
-        $application->applicant->notify(new ApplicationStatusUpdated($application));
+        $application->applicant->notify(new ApplicationStatusUpdated($application , $userEmail));
 
         return response()->json([
             'message' => 'Application status updated successfully',
@@ -374,5 +377,81 @@ public function updateApplicationStatus(Request $request, $applicationId)
         ], 500);
     }
 }
+
+
+public function scheduleApplicationStatus(Request $request, $applicationId)
+{
+    try {
+        // Validate the request
+        $validatedData = $request->validate([
+            'status' => 'required|string|in:accepted,rejected',
+            'user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        // Find the application
+        $application = Application::with(['internship.recruiter', 'applicant' ,'users'])->findOrFail($applicationId);
+          // Get the email of the user
+          $user = User::findOrFail($validatedData['user_id']);
+          $userEmail = $user->email;
+        // Update the application status
+        $application->update([
+            'status' => $validatedData['status']
+        ]);
+
+        // Send notification to the applicant
+        $application->applicant->notify(new ApplicationStatusUpdated($application , $userEmail));
+
+        return response()->json([
+            'message' => 'Application status updated successfully',
+            'application' => $application
+        ], 200);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'error' => 'Application not found'
+        ], 404);
+    } catch (Exception $e) {
+        Log::error('Application Status Update Error:', ['message' => $e->getMessage()]);
+        return response()->json([
+            'error' => 'An error occurred while updating the application status',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+public function GetMyApplications($applicant_id)
+{
+    try {
+        // Fetch the applications by applicant_id and include related internship and recruiter profile data
+        $applications = Application::with(['internship', 'internship.recruiterProfile']) // Eager load internship and recruiter profile
+            ->where('applicant_id', $applicant_id)
+            ->where('status', 'accepted') // Filter by applicant_id
+            ->get(); // Use get() to retrieve all applications for the given applicant
+
+        // Check if any applications were found
+        if ($applications->isEmpty()) {
+            return response()->json(['error' => 'No applications found for this applicant'], 404);
+        }
+
+        // Return the applications with related internship and recruiter information
+        return response()->json([
+            'success' => true,
+            'applications' => $applications, // Contains all applications for the given applicant
+        ]);
+    } catch (\Throwable $th) {
+        // Handle errors
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to retrieve applications',
+            'error' => $th->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+
 
 }

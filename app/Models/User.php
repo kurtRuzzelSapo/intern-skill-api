@@ -49,6 +49,8 @@ public function user()
 }
 
 
+
+
     public function internProfile()
     {
         return $this->hasOne(InternProfile::class, 'user_id');
@@ -68,6 +70,13 @@ public function user()
     {
         return $this->belongsToMany(Forum::class, 'forum_user')->withTimestamps();
     }
+
+    public function specializations()
+    {
+    return $this->hasMany(Specialization::class);
+    }
+
+
 
     public function skills()
     {

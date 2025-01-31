@@ -53,6 +53,11 @@ class Internship extends Model
     return $this->hasMany(User::class, 'applicant_id' , 'id');
     }
 
+    public function recruiterProfile()
+{
+    return $this->belongsTo(RecruiterProfile::class, 'recruiter_id');
+}
+
 // public function applicants()
 // {
 //     return $this->belongsToMany(User::class, 'applications', 'internship_id', 'applicant_id')

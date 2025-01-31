@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Forum;
 use App\Models\InternProfile;
 use App\Models\InternSkill;
 use App\Models\RecruiterProfile;
 use App\Models\Skill;
+use App\Models\specialization;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
@@ -114,6 +116,10 @@ class Authcontroller extends Controller
             'password' => 'required|string|min:6|confirmed',
             'school' => 'required|string',
             'gender' => 'required|string',
+            'hobbies' => 'required|string',
+            'interest' => 'required|string',
+            'specialization' => 'required|array',
+            'specialization.*' => 'required|string',
         ]);
 
         // Return validation errors
@@ -139,6 +145,8 @@ class Authcontroller extends Controller
                 Storage::url('images/cover_default_4.jpg'),
             ];
 
+            $resume = Storage::url('images/blank_resume.jpg');
+
             // Pick a random image from each array
             $randomProfileImage = $profileImages[mt_rand(0, count($profileImages) - 1)];
             $randomCoverImage = $coverImages[mt_rand(0, count($coverImages) - 1)];
@@ -150,10 +158,21 @@ class Authcontroller extends Controller
                 'gender' => $request->gender,
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
+                'interest' => $request->interest,
+                'hobbies' => $request->hobbies,
                 'profile_image' => $request->profile_image ?? $randomProfileImage,
                 'password' => Hash::make($request->password),
                 'role' => 'intern'
             ]);
+
+
+                foreach ($validated->validated()['specialization'] as $specialization) {
+
+                specialization::create([
+                    'user_id' => $user->id,
+                    'specialization' => strtolower(trim($specialization)),
+                ]);
+            }
 
             // Create the intern profile
             InternProfile::create([
@@ -162,6 +181,7 @@ class Authcontroller extends Controller
                 'degree' => $request->degree,
                 'cover_image' => $randomCoverImage, // Store the random cover image path in the database
                 'about' => 'Hello, I am ' . $request->fullname . ' a student at ' . $request->school,
+                'resume' => $resume
             ]);
 
             // Generate token
@@ -196,6 +216,10 @@ class Authcontroller extends Controller
         'gender' => 'required|string',
         'position' => 'required|string',
         'industry' => 'required|string',
+        'hobbies' => 'required|string',
+        'interest' => 'required|string',
+        'specialization' => 'required|array',
+        'specialization.*' => 'required|string',
     ]);
 
     // Return validation errors
@@ -223,9 +247,14 @@ class Authcontroller extends Controller
                 Storage::url('images/cover_default_4.jpg'),
             ];
 
+
+
+
               // Pick a random image from each array
               $randomProfileImage = $profileImages[mt_rand(0, count($profileImages) - 1)];
               $randomCoverImage = $coverImages[mt_rand(0, count($coverImages) - 1)];
+
+
 
         // Create the user
         $user = User::create([
@@ -233,11 +262,18 @@ class Authcontroller extends Controller
             'email' => $request->email,
             'gender' => $request->gender,
             'phone_number' => $request->phone_number,
-            'address' => $request->address,
+            'hobbies' => $request->hobbies,
             'profile_image' => $request->profile_image ?? $randomProfileImage,
             'password' => Hash::make($request->password),
             'role' => 'recruiter'
         ]);
+
+        foreach ($validated->validated()['specialization'] as $specialization) {
+            specialization::create([
+                'user_id' => $user->id,
+                'specialization' => strtolower(trim($specialization)),
+            ]);
+        }
 
         RecruiterProfile::create([
             'user_id' => $user->id,
@@ -317,6 +353,96 @@ public function updateResume(Request $request)
         Log::error('Error updating resume:', ['message' => $exception->getMessage()]);
         return response()->json(['error' => 'Failed to update resume.'], 500);
     }
+}
+
+
+
+
+public function updateProfile(Request $request)
+{
+    try {
+        // Validate the incoming request
+        $validatedData = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|string|email|max:255',
+            'address' => 'nullable|string|max:255',
+            'phone_number' => 'nullable|string|max:15',
+            'about' => 'nullable|string',
+            'school' => 'nullable|string',
+            'company' => 'nullable|string',
+        ]);
+
+        // Fetch the user
+        $user = User::find($validatedData['user_id']);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        // Update user details
+        $user->update([
+            'fullname' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'address' => $validatedData['address'],
+            'phone_number' => $validatedData['phone_number'],
+        ]);
+
+        // Update recruiter or intern profile if applicable
+        if ($user->role === 'recruiter') {
+            $recruiterProfile = RecruiterProfile::firstOrCreate(['user_id' => $user->id]);
+            $recruiterProfile->update([
+                'about' => $validatedData['about'],
+                'company' => $validatedData['company'],
+            ]);
+        } elseif ($user->role === 'intern') {
+            $internProfile = InternProfile::firstOrCreate(['user_id' => $user->id]);
+            $internProfile->update([
+                'about' => $validatedData['about'],
+                'school' => $validatedData['school'],
+            ]);
+        }
+
+
+        return response()->json([
+            'message' => 'Profile updated successfully',
+            'user' => $user->load('recruiterProfile', 'internProfile'), // Eager load related profiles
+        ], 200);
+    } catch (\Throwable $th) {
+        // Log the error for debugging
+        Log::error('Profile update failed', [
+            'error' => $th->getMessage(),
+            'trace' => $th->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'message' => 'Failed to update profile',
+            'error' => $th->getMessage(),
+        ], 500);
+    }
+}
+
+public function getSpecialization()
+{
+    try {
+        // Retrieve unique specializations
+        $specializations = Specialization::select('specialization')
+            ->distinct()
+            ->get();
+
+        // Return the data in JSON format
+        return response()->json([
+            'success' => true,
+            'data' => $specializations
+        ], 200);
+    } catch (\Exception $exception) {
+        // Handle exceptions and log errors
+        Log::error('Error retrieving specializations:', ['message' => $exception->getMessage()]);
+        return response()->json([
+            'success' => false,
+            'message' => 'An error occurred while fetching specializations.'
+        ], 500);
+    }
+
 }
 
 

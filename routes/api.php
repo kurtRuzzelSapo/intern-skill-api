@@ -26,6 +26,7 @@ Route::post('/register/recruiter', [Authcontroller::class, 'registerRecruiter'])
 
 Route::get('/mydata/{id}', [AuthController::class, 'getMyData']);
 
+Route::get('specializations/post', [AuthController::class, 'getSpecialization']);
 
 
 
@@ -40,6 +41,8 @@ Route::post('/reply', [CommentController::class, 'reply']);
 
 Route::get('/comments/{forumId}', [CommentController::class, 'showComments']);
 
+Route::get('specializations/myFilter/{user_id}', [ForumController::class, 'getFilteredForumsByUserSpecializations']);
+
 Route::get('/user/{id}/forums', [ForumController::class, 'getMyForum']);
 
 Route::delete('forum/{forum}/forcedestroy', [ForumController::class, 'forceDestroy'])->middleware('auth:sanctum');
@@ -51,7 +54,10 @@ Route::post('forum/{forum}/restore', [ForumController::class, 'restore'])->middl
 // =======INTERN CONNECT=============
 
 // RECRUITER
+
 Route::post('resume', [Authcontroller::class, 'updateResume']);
+
+Route::post('updateProfile', [Authcontroller::class, 'updateProfile']);
 
 Route::post('apply', [InternController::class, 'applyForInternship']);
 
@@ -61,7 +67,12 @@ Route::post('internship', [InternshipController::class, 'store']);
 
 Route::get('internship', [InternshipController::class, 'index']);
 
+Route::get('/interviews/{application_id}', [RecruiterController::class, 'GetMyApplications']);
+
 Route::get('/myInternships/{id}', [InternshipController::class, 'getMyInternships']);
+
+Route::get('/interns/all', [InternController::class, 'index']);
+
 // INTERN
 
 
