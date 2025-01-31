@@ -27,7 +27,9 @@ class User extends Authenticatable
         'gender',
         'address',
         'profile_image',
-        'role'
+        'role',
+        'interests',
+        'hobbies',
     ];
 
 
